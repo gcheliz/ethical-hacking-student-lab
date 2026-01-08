@@ -343,19 +343,43 @@ $kaliVM = (& $vboxManage list vms | Select-String "kali" | Select-Object -First 
 $windowsVM = (& $vboxManage list vms | Select-String "win2k8" | Select-Object -First 1) -replace '.*"(.+?)".*', '$1'
 
 if ($kaliVM) {
-    # Delete old snapshot if exists
-    & $vboxManage snapshot $kaliVM delete "Clean_State" 2>$null | Out-Null
-    # Create new snapshot
-    & $vboxManage snapshot $kaliVM take "Clean_State" --description "Fresh Kali installation with all tools" | Out-Null
-    Write-Success "Kali snapshot created"
+    Write-Host "  Creating Kali snapshot..." -NoNewline
+    try {
+        # Delete old snapshot if exists
+        & $vboxManage snapshot $kaliVM delete "Clean_State" 2>$null | Out-Null
+
+        # Create new snapshot (VMs must be powered off)
+        $result = & $vboxManage snapshot $kaliVM take "Clean_State" --description "Fresh Kali installation with all tools" 2>&1
+
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host " Done" -ForegroundColor Green
+        } else {
+            Write-Host " Skipped (VM may be running)" -ForegroundColor Yellow
+            Write-Host "  Tip: Power off VMs to create snapshots manually" -ForegroundColor Gray
+        }
+    } catch {
+        Write-Host " Failed" -ForegroundColor Yellow
+    }
 }
 
 if ($windowsVM) {
-    # Delete old snapshot if exists
-    & $vboxManage snapshot $windowsVM delete "Clean_State" 2>$null | Out-Null
-    # Create new snapshot
-    & $vboxManage snapshot $windowsVM take "Clean_State" --description "Fresh Windows installation, ready for exploitation" | Out-Null
-    Write-Success "Windows snapshot created"
+    Write-Host "  Creating Windows snapshot..." -NoNewline
+    try {
+        # Delete old snapshot if exists
+        & $vboxManage snapshot $windowsVM delete "Clean_State" 2>$null | Out-Null
+
+        # Create new snapshot (VMs must be powered off)
+        $result = & $vboxManage snapshot $windowsVM take "Clean_State" --description "Fresh Windows installation, ready for exploitation" 2>&1
+
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host " Done" -ForegroundColor Green
+        } else {
+            Write-Host " Skipped (VM may be running)" -ForegroundColor Yellow
+            Write-Host "  Tip: Power off VMs to create snapshots manually" -ForegroundColor Gray
+        }
+    } catch {
+        Write-Host " Failed" -ForegroundColor Yellow
+    }
 }
 
 Write-Host ""
