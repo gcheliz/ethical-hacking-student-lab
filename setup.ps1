@@ -119,12 +119,12 @@ if ($totalMemoryGB -lt $REQUIRED_RAM_GB) {
 
 Write-Host ""
 
-# STEP 2: Extract Adobe Reader from tar.gz
+# STEP 2: Extract Adobe Reader from ZIP archive
 Write-Step "[2/8] Preparing Adobe Reader installer..."
 Write-Host ""
 
 $adobePath = "resources\AdobeReader_9.5.exe"
-$adobeTarGz = "resources\AdobeReader_9.5.tar.gz"
+$adobeZip = "resources\AdobeReader_9.5.zip"
 
 # Ensure resources directory exists
 New-Item -ItemType Directory -Force -Path "resources" | Out-Null
@@ -140,76 +140,65 @@ if (Test-Path $adobePath) {
     }
 }
 
-# If not ready, extract from tar.gz
+# If not ready, extract from ZIP
 if (-not (Test-Path $adobePath)) {
-    if (Test-Path $adobeTarGz) {
-        Write-Host "  Extracting Adobe Reader from archive..."
+    if (Test-Path $adobeZip) {
+        Write-Host "  Extracting Adobe Reader from ZIP archive..."
 
         try {
-            # Use tar (available in Windows 10 1803+)
-            $tarPath = "C:\Windows\System32\tar.exe"
-            if (Test-Path $tarPath) {
-                # First, list contents to verify
-                Write-Host "  Checking archive contents..."
-                $tarContents = & $tarPath -tzf $adobeTarGz 2>&1
-                Write-Host "  Archive contains: $tarContents"
+            # Extract using PowerShell Expand-Archive
+            $tempExtractPath = Join-Path $env:TEMP "adobe_extract_temp"
 
-                # Extract to resources directory
-                Push-Location resources
-                $extractOutput = & $tarPath -xzf "AdobeReader_9.5.tar.gz" 2>&1
-                Pop-Location
+            # Remove temp directory if exists
+            if (Test-Path $tempExtractPath) {
+                Remove-Item -Path $tempExtractPath -Recurse -Force
+            }
 
-                # Verify extraction immediately
-                if (Test-Path $adobePath) {
-                    $fileSizeMB = [math]::Round((Get-Item $adobePath).Length / 1MB, 2)
-                    Write-Success "Extracted successfully (${fileSizeMB}MB)"
-                } else {
-                    # Check if file was extracted with a different name
-                    Write-Host "  Extraction output: $extractOutput"
-                    $extractedFiles = Get-ChildItem -Path resources -Filter "*.exe" | Select-Object -First 5
-                    if ($extractedFiles) {
-                        Write-Host "  Found .exe files in resources:"
-                        foreach ($file in $extractedFiles) {
-                            Write-Host "    - $($file.Name) ($([math]::Round($file.Length / 1MB, 2))MB)"
-                        }
-                        Write-Error-Message "Expected file 'AdobeReader_9.5.exe' not found"
-                        Write-Host ""
-                        Write-Host "The archive may contain a different filename."
-                        Write-Host "Please rename the extracted .exe to 'AdobeReader_9.5.exe' in the resources folder"
-                    } else {
-                        Write-Error-Message "No files were extracted"
-                        Write-Host "  Archive contents were: $tarContents"
-                    }
-                    exit 1
-                }
+            # Extract to temp directory
+            Expand-Archive -Path $adobeZip -DestinationPath $tempExtractPath -Force
+
+            # Find the .exe file (could be in subdirectory or with different name)
+            $extractedExe = Get-ChildItem -Path $tempExtractPath -Filter "*.exe" -Recurse | Select-Object -First 1
+
+            if ($extractedExe) {
+                # Copy to resources with correct name
+                Copy-Item -Path $extractedExe.FullName -Destination $adobePath -Force
+
+                # Cleanup temp directory
+                Remove-Item -Path $tempExtractPath -Recurse -Force
+
+                # Verify the copied file
+                $fileSizeMB = [math]::Round((Get-Item $adobePath).Length / 1MB, 2)
+                Write-Success "Extracted successfully (${fileSizeMB}MB)"
             } else {
-                # Fallback: manual extraction instructions
-                Write-Error-Message "tar.exe not found (requires Windows 10 1803+)"
+                Write-Error-Message "No .exe file found in ZIP archive"
                 Write-Host ""
-                Write-Host "Please extract manually:"
-                Write-Host "  1. Open resources\AdobeReader_9.5.tar.gz with 7-Zip or WinRAR"
-                Write-Host "  2. Extract AdobeReader_9.5.exe to resources\ folder"
-                Write-Host "  3. Run setup.ps1 again"
-                Write-Host ""
-                Write-Host "Or download directly: .\download-adobe-retry.ps1"
+                Write-Host "The ZIP archive may be empty or corrupted."
+                Write-Host "Please contact your instructor for the correct AdobeReader_9.5.zip file"
+
+                # Cleanup
+                if (Test-Path $tempExtractPath) {
+                    Remove-Item -Path $tempExtractPath -Recurse -Force
+                }
                 exit 1
             }
         } catch {
             Write-Error-Message "Failed to extract: $($_.Exception.Message)"
             Write-Host ""
-            Write-Host "Try extracting manually with 7-Zip or WinRAR"
-            Write-Host "Or download directly: .\download-adobe-retry.ps1"
+            Write-Host "Please try extracting manually:"
+            Write-Host "  1. Right-click resources\AdobeReader_9.5.zip"
+            Write-Host "  2. Select 'Extract All...'"
+            Write-Host "  3. Copy the .exe file to resources\AdobeReader_9.5.exe"
+            Write-Host "  4. Run setup.ps1 again"
             exit 1
         }
     } else {
-        Write-Error-Message "Adobe Reader archive not found!"
+        Write-Error-Message "Adobe Reader ZIP archive not found!"
         Write-Host ""
-        Write-Host "The file resources\AdobeReader_9.5.tar.gz is missing."
+        Write-Host "The file resources\AdobeReader_9.5.zip is missing."
         Write-Host ""
-        Write-Host "Options:" -ForegroundColor Yellow
-        Write-Host "  1. Contact your instructor for the archive file"
-        Write-Host "  2. Run: .\download-adobe-retry.ps1"
-        Write-Host "  3. See: ADOBE_DOWNLOAD_SOURCES.md for manual download"
+        Write-Host "Required file: resources\AdobeReader_9.5.zip"
+        Write-Host "Please contact your instructor to obtain this file."
         Write-Host ""
         exit 1
     }
@@ -223,7 +212,7 @@ if (Test-Path $adobePath) {
         Remove-Item $adobePath -Force
         Write-Host ""
         Write-Host "Expected size: approximately 50MB"
-        Write-Host "Please re-download the tar.gz file or contact your instructor"
+        Write-Host "Please contact your instructor for the correct ZIP file"
         exit 1
     }
     Write-Success "File verified (${fileSizeMB}MB)"

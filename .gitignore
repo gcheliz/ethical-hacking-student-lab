@@ -24,4 +24,4 @@ desktop.ini
 resources/AdobeReader_9.5.exe
 
 # Keep the compressed version in git
-!resources/AdobeReader_9.5.tar.gz
+!resources/AdobeReader_9.5.zip

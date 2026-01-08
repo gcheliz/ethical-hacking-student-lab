@@ -1,207 +1,215 @@
-# Maintainer Setup Instructions
+# Maintainer Setup Guide
 
-This guide is for repository maintainers who need to add the Adobe Reader installer to the repository.
+This guide is for **repository maintainers** who need to add the Adobe Reader 9.5.0 installer to the repository.
 
----
+## Overview
 
-## 📦 Adding Adobe Reader 9.5.0 to Repository
+The Adobe Reader 9.5.0 installer (approximately 50MB) is required for the lab but is too large to include directly in the repository. Instead, we:
 
-The Adobe Reader installer must be compressed and committed to avoid download issues.
+1. Compress the installer into a ZIP file
+2. Commit the ZIP file to the repository
+3. The setup scripts automatically extract it when students run the lab
 
-### Step 1: Download Adobe Reader 9.5.0
+## Step-by-Step Instructions
 
-**Download from a reliable source:**
-- **OldVersion.com:** http://www.oldversion.com/windows/adobe-reader-9-5-0
-- **Direct Link:** http://ardownload.adobe.com/pub/adobe/reader/win/9.x/9.5.0/enu/AdbeRdr950_en_US.exe
+### 1. Obtain Adobe Reader 9.5.0 Installer
 
-**File Details:**
-- Original name: `AdbeRdr950_en_US.exe`
-- Size: ~52,428,800 bytes (50 MB)
-- MD5: Verify it's a complete download
+You need to obtain the **AdbeRdr950_en_US.exe** file (approximately 50MB).
 
-### Step 2: Rename the File
+**Option A: Manual Download**
 
+Download from one of these sources:
+- **OldVersion.com**: https://www.oldversion.com/windows/adobe-reader-9-5-0
+- **FileHippo**: https://filehippo.com/download_adobe-reader/9.5.0/
+
+**Option B: From Archive**
+
+If you have access to an archived copy, use that.
+
+**IMPORTANT**: Verify the file is approximately **50MB** (not 33MB which is corrupted).
+
+### 2. Rename the Installer
+
+Rename the downloaded file to the standard name:
+
+**Windows:**
+```powershell
+Rename-Item "AdbeRdr950_en_US.exe" "AdobeReader_9.5.exe"
+```
+
+**Linux/macOS:**
 ```bash
 mv AdbeRdr950_en_US.exe AdobeReader_9.5.exe
 ```
 
-### Step 3: Compress with tar.gz
+### 3. Create ZIP Archive
 
-**On Linux/macOS:**
-```bash
-tar -czf AdobeReader_9.5.tar.gz AdobeReader_9.5.exe
-```
-
-**On Windows (Git Bash):**
-```bash
-tar -czf AdobeReader_9.5.tar.gz AdobeReader_9.5.exe
-```
-
-**On Windows (PowerShell with 7-Zip installed):**
+**Windows (PowerShell):**
 ```powershell
-& "C:\Program Files\7-Zip\7z.exe" a -tgzip AdobeReader_9.5.tar.gz AdobeReader_9.5.exe
+# Using built-in Compress-Archive
+Compress-Archive -Path AdobeReader_9.5.exe -DestinationPath AdobeReader_9.5.zip -CompressionLevel Optimal
+
+# Verify the ZIP was created
+Get-Item AdobeReader_9.5.zip | Select-Object Name, @{Name="SizeMB";Expression={[math]::Round($_.Length / 1MB, 2)}}
 ```
 
-**Expected result:**
-- Compressed file: `AdobeReader_9.5.tar.gz`
-- Size: ~40-45 MB (compressed)
-
-### Step 4: Move to resources folder
-
-```bash
-mv AdobeReader_9.5.tar.gz resources/
-```
-
-### Step 5: Add to Git
-
-```bash
-# Add the compressed file
-git add resources/AdobeReader_9.5.tar.gz
-
-# Commit
-git commit -m "Add Adobe Reader 9.5.0 installer (compressed)"
-
-# Push
-git push origin main
-```
-
-### Step 6: Verify .gitignore
-
-The `.gitignore` file should already contain:
-
-```gitignore
-# Adobe Reader installer (uncompressed)
-resources/AdobeReader_9.5.exe
-
-# Keep the compressed version
-!resources/AdobeReader_9.5.tar.gz
-```
-
-This ensures:
-- ✅ The compressed `.tar.gz` file is tracked in git
-- ✅ The uncompressed `.exe` file is ignored (students extract it locally)
-
----
-
-## 🔍 Verification
-
-### Verify the tar.gz file
-
-**Linux/macOS/Git Bash:**
-```bash
-tar -tzf resources/AdobeReader_9.5.tar.gz
-```
-
-**Should output:**
-```
-AdobeReader_9.5.exe
-```
-
-### Test Extraction
-
-**On Windows (PowerShell):**
+**Windows (7-Zip - if installed):**
 ```powershell
-cd resources
-C:\Windows\System32\tar.exe -xzf AdobeReader_9.5.tar.gz
-Get-Item AdobeReader_9.5.exe | Select-Object Name, Length
+& "C:\Program Files\7-Zip\7z.exe" a -tzip AdobeReader_9.5.zip AdobeReader_9.5.exe
 ```
 
-**On Linux/macOS:**
+**Linux/macOS:**
 ```bash
-cd resources
-tar -xzf AdobeReader_9.5.tar.gz
-ls -lh AdobeReader_9.5.exe
+zip AdobeReader_9.5.zip AdobeReader_9.5.exe
+
+# Verify the ZIP was created
+ls -lh AdobeReader_9.5.zip
 ```
 
-**Expected:**
-- Extracted file: `AdobeReader_9.5.exe`
-- Size: ~50 MB
+### 4. Move to Resources Folder
 
----
-
-## 📚 Alternative: Using Git LFS
-
-For better Git performance with large files, consider using Git LFS:
-
-### Install Git LFS
-
-```bash
-# Linux
-sudo apt install git-lfs
-
-# macOS
-brew install git-lfs
-
-# Windows
-# Download from: https://git-lfs.github.com/
+**Windows:**
+```powershell
+Move-Item AdobeReader_9.5.zip resources\
 ```
 
-### Setup Git LFS
+**Linux/macOS:**
+```bash
+mv AdobeReader_9.5.zip resources/
+```
+
+### 5. Add to Git and Commit
+
+**All Platforms:**
+```bash
+# Add the ZIP file to git
+git add resources/AdobeReader_9.5.zip
+
+# Commit with descriptive message
+git commit -m "Add Adobe Reader 9.5.0 installer (zipped)"
+
+# Push to repository
+git push
+```
+
+### 6. Verify Setup
+
+After pushing, verify that:
+
+1. The ZIP file is in the repository: `resources/AdobeReader_9.5.zip`
+2. The extracted .exe is **NOT** in the repository (it's in .gitignore)
+3. File size is approximately 40-45MB (compressed)
+
+## Expected File Sizes
+
+| File | Size | Status |
+|------|------|--------|
+| `AdobeReader_9.5.exe` | ~50 MB | **NOT** in git (ignored) |
+| `AdobeReader_9.5.zip` | ~40-45 MB | **IN** git (tracked) |
+
+## Verification
+
+To verify the setup works correctly:
+
+**Windows:**
+```powershell
+# Clone the repository fresh
+git clone <repository-url> test-clone
+cd test-clone
+
+# Run setup
+.\setup.ps1
+```
+
+**Linux/macOS:**
+```bash
+# Clone the repository fresh
+git clone <repository-url> test-clone
+cd test-clone
+
+# Run setup
+./setup.sh
+```
+
+The setup script should:
+1. Find `resources/AdobeReader_9.5.zip`
+2. Extract it to `resources/AdobeReader_9.5.exe`
+3. Verify the file is approximately 50MB
+4. Continue with VM setup
+
+## Troubleshooting
+
+### ZIP file is too large for GitHub
+
+If the ZIP file exceeds GitHub's file size limit (100MB), you have options:
+
+**Option 1: Use Git LFS (Recommended)**
 
 ```bash
-# Initialize Git LFS
+# Install Git LFS
 git lfs install
 
-# Track tar.gz files
-git lfs track "*.tar.gz"
+# Track the ZIP file with LFS
+git lfs track "resources/AdobeReader_9.5.zip"
 
 # Add .gitattributes
 git add .gitattributes
 
-# Commit
-git commit -m "Configure Git LFS for large files"
-
-# Add Adobe Reader
-git add resources/AdobeReader_9.5.tar.gz
-git commit -m "Add Adobe Reader 9.5.0 installer via Git LFS"
+# Add and commit the file
+git add resources/AdobeReader_9.5.zip
+git commit -m "Add Adobe Reader installer using Git LFS"
 git push
 ```
 
-**Benefits of Git LFS:**
-- Faster cloning (large files downloaded on-demand)
-- Better repository performance
-- Efficient storage
+**Option 2: Use external hosting**
 
-**Note:** Students will need Git LFS installed to clone.
+Upload the ZIP to:
+- Google Drive
+- Dropbox
+- Amazon S3
+- Your institution's file server
+
+Then update the setup scripts to download from that URL (requires modifying setup.ps1 and setup.sh).
+
+### Students report "ZIP archive not found"
+
+Verify the file was pushed correctly:
+
+```bash
+git ls-files resources/
+```
+
+Should show: `resources/AdobeReader_9.5.zip`
+
+### Extraction fails
+
+Verify the ZIP is valid:
+
+**Windows:**
+```powershell
+Expand-Archive -Path resources\AdobeReader_9.5.zip -DestinationPath test-extract -Force
+Get-ChildItem test-extract
+```
+
+**Linux/macOS:**
+```bash
+unzip -t resources/AdobeReader_9.5.zip
+```
+
+## Security Note
+
+Adobe Reader 9.5.0 is an **intentionally vulnerable** version used for educational security demonstrations. This software should **NEVER** be used in production environments or connected to the internet.
+
+The lab environment is designed to be:
+- Isolated (host-only networking)
+- Temporary (VMs can be destroyed after use)
+- Educational (demonstrates real security vulnerabilities)
 
 ---
 
-## 🚨 Important Notes
+## Questions?
 
-1. **Only commit the compressed .tar.gz file** - never commit the uncompressed .exe
-2. **Verify file size** - must be ~40-45 MB compressed
-3. **Test extraction** - ensure students can extract on Windows 10+
-4. **Update documentation** - if using Git LFS, update README.md
-
----
-
-## 🔄 Updating the Installer
-
-If Adobe Reader needs to be updated (e.g., version 9.5.1):
-
-1. Download new version
-2. Rename to match pattern: `AdobeReader_X.X.exe`
-3. Compress: `tar -czf AdobeReader_X.X.tar.gz AdobeReader_X.X.exe`
-4. Update setup scripts to reference new filename
-5. Update Vagrantfile provisioning scripts
-6. Test full setup process
-7. Commit and push
-
----
-
-## 📞 Support
-
-If you encounter issues:
-- Check `.gitignore` is configured correctly
-- Verify tar.gz file integrity
-- Test extraction on target platforms
-- Consult: `resources/README.md` for details
-
----
-
-**Repository is ready when:**
-- ✅ `resources/AdobeReader_9.5.tar.gz` exists and is tracked
-- ✅ File size is 40-45 MB (compressed)
-- ✅ Extraction works on Windows 10+, Linux, macOS
-- ✅ Setup scripts reference the tar.gz file
-- ✅ `.gitignore` properly configured
+If you encounter issues setting up the repository, please:
+1. Check the file sizes match the expected values
+2. Verify the ZIP extracts correctly on your local machine
+3. Test the setup scripts in a fresh clone of the repository
