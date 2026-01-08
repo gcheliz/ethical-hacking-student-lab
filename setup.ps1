@@ -57,7 +57,7 @@ Write-Header "ETHICAL HACKING LAB - AUTOMATED LOCAL SETUP"
 Write-Header "PDF Exploit Demonstration Environment"
 
 # STEP 1: Check Prerequisites
-Write-Step "[1/8] Checking prerequisites..."
+Write-Step "[1/9] Checking prerequisites..."
 Write-Host ""
 
 # Check if running as Administrator
@@ -120,7 +120,7 @@ if ($totalMemoryGB -lt $REQUIRED_RAM_GB) {
 Write-Host ""
 
 # STEP 2: Extract Adobe Reader from ZIP archive
-Write-Step "[2/8] Preparing Adobe Reader installer..."
+Write-Step "[2/9] Preparing Adobe Reader installer..."
 Write-Host ""
 
 $adobePath = "resources\AdobeReader_9.5.exe"
@@ -211,7 +211,7 @@ if (Test-Path $adobePath) {
 Write-Host ""
 
 # STEP 3: Configure VirtualBox Network
-Write-Step "[3/8] Configuring VirtualBox network..."
+Write-Step "[3/9] Configuring VirtualBox network..."
 Write-Host ""
 
 # Check if host-only network exists
@@ -241,7 +241,7 @@ Write-Success "Network interface: $NETWORK_NAME"
 Write-Host ""
 
 # STEP 4: Build Kali Linux VM
-Write-Step "[4/8] Building Kali Linux VM..."
+Write-Step "[4/9] Building Kali Linux VM..."
 Write-Host "  This will take 5-10 minutes..."
 Write-Host ""
 
@@ -296,8 +296,45 @@ if ($LASTEXITCODE -eq 0) {
 
 Write-Host ""
 
+# STEP 4.5: Verify PDFs are synced to host before Windows build
+Write-Step "[4.5/9] Verifying PDF files synced to host..."
+Write-Host ""
+
+Write-Host "  Waiting for shared folder to sync..." -ForegroundColor Yellow
+
+# Wait up to 30 seconds for PDFs to appear on host
+$maxWait = 30
+$waitCount = 0
+$pdfPath = "..\exploits\JOAN-ESPINACH-TRD.pdf"
+
+while (-not (Test-Path $pdfPath) -and ($waitCount -lt $maxWait)) {
+    Write-Host "  Waiting for PDFs to sync... ($waitCount/$maxWait seconds)" -ForegroundColor Gray
+    Start-Sleep -Seconds 1
+    $waitCount++
+}
+
+if (Test-Path $pdfPath) {
+    $fileSize = [math]::Round((Get-Item $pdfPath).Length / 1KB, 2)
+    Write-Success "PDFs synced to host (${fileSize}KB)"
+
+    # List all PDFs found
+    Write-Host ""
+    Write-Host "  PDFs in exploits folder:" -ForegroundColor Cyan
+    Get-ChildItem "..\exploits\*.pdf" -ErrorAction SilentlyContinue | ForEach-Object {
+        $sizeMB = [math]::Round($_.Length / 1KB, 2)
+        Write-Host "    - $($_.Name) (${sizeMB}KB)" -ForegroundColor Green
+    }
+} else {
+    Write-Warning-Message "PDFs not found on host after $maxWait seconds"
+    Write-Host "  This may cause issues with Windows provisioning" -ForegroundColor Yellow
+    Write-Host "  The PDFs may be generated inside Kali VM only" -ForegroundColor Yellow
+    Write-Host ""
+}
+
+Write-Host ""
+
 # STEP 5: Build Windows VM
-Write-Step "[5/8] Building Windows Server 2008 R2 VM..."
+Write-Step "[5/9] Building Windows Server 2008 R2 VM..."
 Write-Host "  This will take 20-30 minutes (downloading and configuring)..."
 Write-Host "  Progress:"
 Write-Host "  - Downloading Windows box"
@@ -371,7 +408,7 @@ if ($LASTEXITCODE -eq 0) {
 Write-Host ""
 
 # STEP 6: Verify Connectivity
-Write-Step "[6/8] Verifying network connectivity..."
+Write-Step "[6/9] Verifying network connectivity..."
 Write-Host ""
 
 Write-Host "  Waiting for VMs to be fully ready..." -ForegroundColor Yellow
@@ -416,7 +453,7 @@ if ($LASTEXITCODE -eq 0) {
 Write-Host ""
 
 # STEP 7: Create Initial Snapshots
-Write-Step "[7/8] Creating snapshots for easy reset..."
+Write-Step "[7/9] Creating snapshots for easy reset..."
 Write-Host ""
 
 # Get actual VM names from VirtualBox
@@ -466,7 +503,7 @@ if ($windowsVM) {
 Write-Host ""
 
 # STEP 8: Verify Exploit Files
-Write-Step "[8/8] Verifying exploit materials..."
+Write-Step "[8/9] Verifying exploit materials..."
 Write-Host ""
 
 vagrant ssh kali -c "ls -lh ~/.msf4/local/JOAN-ESPINACH-TRD.pdf" 2>$null | Out-Null
