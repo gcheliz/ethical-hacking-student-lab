@@ -298,8 +298,8 @@ vagrant --version
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/your-org/ethical-hacking-pdf-lab.git
-cd ethical-hacking-pdf-lab
+git clone https://github.com/gcheliz/ethical-hacking-student-lab.git
+cd ethical-hacking-student-lab
 
 # 2. Run automated setup
 ./setup.sh
