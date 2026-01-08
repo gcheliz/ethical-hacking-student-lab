@@ -1,11 +1,8 @@
-################################################################################
 # Ethical Hacking Lab - Automated Local Setup (Windows PowerShell)
 # Description: One-command setup for complete lab environment
 # Requirements: VirtualBox, Vagrant
 # Usage: .\setup.ps1
-################################################################################
 
-# Requires PowerShell 5.1 or higher
 #Requires -Version 5.1
 
 # Configuration
@@ -26,11 +23,10 @@ function Write-ColorOutput {
 
 function Write-Header {
     param([string]$Text)
-    Write-ColorOutput "`n╔════════════════════════════════════════════════════════════════╗" "Cyan"
-    Write-ColorOutput "║                                                                ║" "Cyan"
-    Write-ColorOutput "║    $Text" "Cyan"
-    Write-ColorOutput "║                                                                ║" "Cyan"
-    Write-ColorOutput "╚════════════════════════════════════════════════════════════════╝" "Cyan"
+    Write-Host ""
+    Write-Host "================================================================" -ForegroundColor Cyan
+    Write-Host "  $Text" -ForegroundColor Cyan
+    Write-Host "================================================================" -ForegroundColor Cyan
     Write-Host ""
 }
 
@@ -41,32 +37,30 @@ function Write-Step {
 
 function Write-Success {
     param([string]$Text)
-    Write-ColorOutput "  ✓ $Text" "Green"
+    Write-ColorOutput "  [OK] $Text" "Green"
 }
 
 function Write-Error-Message {
     param([string]$Text)
-    Write-ColorOutput "✗ $Text" "Red"
+    Write-ColorOutput "[ERROR] $Text" "Red"
 }
 
 function Write-Warning-Message {
     param([string]$Text)
-    Write-ColorOutput "  ⚠ $Text" "Yellow"
+    Write-ColorOutput "  [WARNING] $Text" "Yellow"
 }
 
 # Main script
 Clear-Host
 
-Write-Header "    ETHICAL HACKING LAB - AUTOMATED LOCAL SETUP                 "
-Write-Header "    PDF Exploit Demonstration Environment                       "
+Write-Header "ETHICAL HACKING LAB - AUTOMATED LOCAL SETUP"
+Write-Header "PDF Exploit Demonstration Environment"
 
-# ============================================================================
 # STEP 1: Check Prerequisites
-# ============================================================================
 Write-Step "[1/8] Checking prerequisites..."
 Write-Host ""
 
-# Check if running as Administrator (recommended but not required)
+# Check if running as Administrator
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
     Write-Warning-Message "Not running as Administrator. Some operations may fail."
@@ -125,9 +119,7 @@ if ($totalMemoryGB -lt $REQUIRED_RAM_GB) {
 
 Write-Host ""
 
-# ============================================================================
-# STEP 2: Download Adobe Reader (if needed)
-# ============================================================================
+# STEP 2: Download Adobe Reader
 Write-Step "[2/8] Checking Adobe Reader installer..."
 Write-Host ""
 
@@ -182,15 +174,19 @@ $fileSizeMB = [math]::Round((Get-Item $adobePath).Length / 1MB, 2)
 if ($fileSizeMB -lt 40) {
     Write-Error-Message "Adobe Reader file seems incomplete (${fileSizeMB}MB)"
     Remove-Item $adobePath -Force
+    Write-Host ""
+    Write-Host "The file is incomplete. Please download manually:"
+    Write-Host "  https://archive.org/download/adobe-reader-9.5/AdbeRdr950_en_US.exe"
+    Write-Host ""
+    Write-Host "Save as: resources\AdobeReader_9.5.exe"
+    Write-Host "Expected size: approximately 50MB"
     exit 1
 }
 Write-Success "File verified (${fileSizeMB}MB)"
 
 Write-Host ""
 
-# ============================================================================
 # STEP 3: Configure VirtualBox Network
-# ============================================================================
 Write-Step "[3/8] Configuring VirtualBox network..."
 Write-Host ""
 
@@ -220,9 +216,7 @@ Write-Success "Network configured: 192.168.56.0/24"
 Write-Success "Network interface: $NETWORK_NAME"
 Write-Host ""
 
-# ============================================================================
 # STEP 4: Build Kali Linux VM
-# ============================================================================
 Write-Step "[4/8] Building Kali Linux VM..."
 Write-Host "  This will take 5-10 minutes..."
 Write-Host ""
@@ -252,9 +246,7 @@ if ($LASTEXITCODE -eq 0) {
 
 Write-Host ""
 
-# ============================================================================
 # STEP 5: Build Windows VM
-# ============================================================================
 Write-Step "[5/8] Building Windows Server 2008 R2 VM..."
 Write-Host "  This will take 20-30 minutes (downloading and configuring)..."
 Write-Host "  Progress:"
@@ -291,38 +283,34 @@ if ($LASTEXITCODE -eq 0) {
 
 Write-Host ""
 
-# ============================================================================
 # STEP 6: Verify Connectivity
-# ============================================================================
 Write-Step "[6/8] Verifying network connectivity..."
 Write-Host ""
 
 # Test Kali -> Windows
-Write-Host "  Testing Kali → Windows..."
+Write-Host "  Testing Kali -> Windows..."
 vagrant ssh kali -c "ping -c 2 $WINDOWS_IP" 2>$null | Out-Null
 if ($LASTEXITCODE -eq 0) {
-    Write-Success "Kali → Windows: OK"
+    Write-Success "Kali -> Windows: OK"
 } else {
-    Write-Error-Message "Kali → Windows: FAILED"
+    Write-Error-Message "Kali -> Windows: FAILED"
     Write-Host "  Network connectivity issue detected"
     Pop-Location
     exit 1
 }
 
 # Test Windows -> Kali
-Write-Host "  Testing Windows → Kali..."
+Write-Host "  Testing Windows -> Kali..."
 vagrant winrm win2k8 -c "Test-Connection $KALI_IP -Count 2 -Quiet" 2>$null | Out-Null
 if ($LASTEXITCODE -eq 0) {
-    Write-Success "Windows → Kali: OK"
+    Write-Success "Windows -> Kali: OK"
 } else {
-    Write-Warning-Message "Windows → Kali: Could not verify (but probably OK)"
+    Write-Warning-Message "Windows -> Kali: Could not verify (but probably OK)"
 }
 
 Write-Host ""
 
-# ============================================================================
 # STEP 7: Create Initial Snapshots
-# ============================================================================
 Write-Step "[7/8] Creating snapshots for easy reset..."
 Write-Host ""
 
@@ -348,9 +336,7 @@ if ($windowsVM) {
 
 Write-Host ""
 
-# ============================================================================
 # STEP 8: Verify Exploit Files
-# ============================================================================
 Write-Step "[8/8] Verifying exploit materials..."
 Write-Host ""
 
@@ -367,75 +353,71 @@ Write-Host ""
 
 Pop-Location
 
-# ============================================================================
 # SUCCESS SUMMARY
-# ============================================================================
 Write-Host ""
-Write-ColorOutput "╔════════════════════════════════════════════════════════════════╗" "Green"
-Write-ColorOutput "║                                                                ║" "Green"
-Write-ColorOutput "║                    SETUP COMPLETE! ✓                           ║" "Green"
-Write-ColorOutput "║                                                                ║" "Green"
-Write-ColorOutput "╚════════════════════════════════════════════════════════════════╝" "Green"
+Write-Host "================================================================" -ForegroundColor Green
+Write-Host "                    SETUP COMPLETE!" -ForegroundColor Green
+Write-Host "================================================================" -ForegroundColor Green
 Write-Host ""
-Write-ColorOutput "═══════════════════════════════════════════════════════════════" "Cyan"
-Write-ColorOutput "                    LAB ENVIRONMENT READY                      " "Cyan"
-Write-ColorOutput "═══════════════════════════════════════════════════════════════" "Cyan"
+Write-Host "================================================================" -ForegroundColor Cyan
+Write-Host "                 LAB ENVIRONMENT READY" -ForegroundColor Cyan
+Write-Host "================================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-ColorOutput "Virtual Machines:" "Cyan"
-Write-ColorOutput "  ✓ Kali Linux (Attacker)" "Green"
+Write-Host "Virtual Machines:" -ForegroundColor Cyan
+Write-Host "  [OK] Kali Linux (Attacker)" -ForegroundColor Green
 Write-Host "    IP Address:      $KALI_IP"
 Write-Host "    Username:        vagrant"
 Write-Host "    Password:        vagrant"
 Write-Host "    Tools:           Metasploit, Nmap, Python3"
 Write-Host ""
-Write-ColorOutput "  ✓ Windows Server 2008 R2 (Target)" "Green"
+Write-Host "  [OK] Windows Server 2008 R2 (Target)" -ForegroundColor Green
 Write-Host "    IP Address:      $WINDOWS_IP"
 Write-Host "    Username:        vagrant"
 Write-Host "    Password:        vagrant"
 Write-Host "    Vulnerability:   Adobe Reader 9.5.0"
 Write-Host "    Security:        ALL DISABLED (intentionally vulnerable)"
 Write-Host ""
-Write-ColorOutput "Network:" "Cyan"
-Write-ColorOutput "  ✓ Host-Only Network:  192.168.56.0/24" "Green"
-Write-ColorOutput "  ✓ Connectivity:       Verified" "Green"
-Write-ColorOutput "  ✓ Isolation:          Complete (no internet from VMs)" "Green"
+Write-Host "Network:" -ForegroundColor Cyan
+Write-Host "  [OK] Host-Only Network:  192.168.56.0/24" -ForegroundColor Green
+Write-Host "  [OK] Connectivity:       Verified" -ForegroundColor Green
+Write-Host "  [OK] Isolation:          Complete (no internet from VMs)" -ForegroundColor Green
 Write-Host ""
-Write-ColorOutput "Exploit Materials:" "Cyan"
-Write-ColorOutput "  ✓ Malicious PDF:      JOAN-ESPINACH-TRD.pdf" "Green"
-Write-ColorOutput "  ✓ Attack Scripts:     Ready in /vagrant/exploits" "Green"
-Write-ColorOutput "  ✓ Snapshots:          Created for easy reset" "Green"
+Write-Host "Exploit Materials:" -ForegroundColor Cyan
+Write-Host "  [OK] Malicious PDF:      JOAN-ESPINACH-TRD.pdf" -ForegroundColor Green
+Write-Host "  [OK] Attack Scripts:     Ready in /vagrant/exploits" -ForegroundColor Green
+Write-Host "  [OK] Snapshots:          Created for easy reset" -ForegroundColor Green
 Write-Host ""
-Write-ColorOutput "═══════════════════════════════════════════════════════════════" "Cyan"
-Write-ColorOutput "                        NEXT STEPS                             " "Cyan"
-Write-ColorOutput "═══════════════════════════════════════════════════════════════" "Cyan"
+Write-Host "================================================================" -ForegroundColor Cyan
+Write-Host "                        NEXT STEPS" -ForegroundColor Cyan
+Write-Host "================================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-ColorOutput "1. Read the lab guide:" "Yellow"
-Write-ColorOutput "   start docs\LAB_GUIDE.pdf" "Cyan"
+Write-Host "1. Read the lab guide:" -ForegroundColor Yellow
+Write-Host "   start docs\LAB_GUIDE.pdf" -ForegroundColor Cyan
 Write-Host ""
-Write-ColorOutput "2. Access the VMs:" "Yellow"
-Write-ColorOutput "   cd vagrant" "Cyan"
-Write-ColorOutput "   vagrant ssh kali          # SSH into Kali Linux" "Cyan"
-Write-ColorOutput "   vagrant rdp win2k8        # RDP into Windows (GUI)" "Cyan"
+Write-Host "2. Access the VMs:" -ForegroundColor Yellow
+Write-Host "   cd vagrant" -ForegroundColor Cyan
+Write-Host "   vagrant ssh kali          # SSH into Kali Linux" -ForegroundColor Cyan
+Write-Host "   vagrant rdp win2k8        # RDP into Windows (GUI)" -ForegroundColor Cyan
 Write-Host ""
-Write-ColorOutput "3. Run the automated attack:" "Yellow"
-Write-ColorOutput "   cd vagrant" "Cyan"
-Write-ColorOutput "   vagrant ssh kali" "Cyan"
-Write-ColorOutput "   cd /vagrant/exploits" "Cyan"
-Write-ColorOutput "   ./start_attack.sh" "Cyan"
+Write-Host "3. Run the automated attack:" -ForegroundColor Yellow
+Write-Host "   cd vagrant" -ForegroundColor Cyan
+Write-Host "   vagrant ssh kali" -ForegroundColor Cyan
+Write-Host "   cd /vagrant/exploits" -ForegroundColor Cyan
+Write-Host "   ./start_attack.sh" -ForegroundColor Cyan
 Write-Host ""
-Write-ColorOutput "4. Reset to clean state when done:" "Yellow"
-Write-ColorOutput "   .\reset.ps1" "Cyan"
+Write-Host "4. Reset to clean state when done:" -ForegroundColor Yellow
+Write-Host "   .\reset.ps1" -ForegroundColor Cyan
 Write-Host ""
-Write-ColorOutput "═══════════════════════════════════════════════════════════════" "Cyan"
-Write-ColorOutput "                      DOCUMENTATION                            " "Cyan"
-Write-ColorOutput "═══════════════════════════════════════════════════════════════" "Cyan"
+Write-Host "================================================================" -ForegroundColor Cyan
+Write-Host "                      DOCUMENTATION" -ForegroundColor Cyan
+Write-Host "================================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  📘 Lab Guide:           docs\LAB_GUIDE.pdf"
-Write-Host "  📗 Quick Start:         docs\QUICK_START.md"
-Write-Host "  📙 Troubleshooting:     TROUBLESHOOTING.md"
-Write-Host "  📕 Instructor Guide:    docs\INSTRUCTOR_GUIDE.pdf"
+Write-Host "  Lab Guide:           docs\LAB_GUIDE.pdf"
+Write-Host "  Quick Start:         docs\QUICK_START.md"
+Write-Host "  Troubleshooting:     TROUBLESHOOTING.md"
+Write-Host "  Instructor Guide:    docs\INSTRUCTOR_GUIDE.pdf"
 Write-Host ""
-Write-ColorOutput "Happy Hacking! 🎯" "Green"
+Write-Host "Happy Hacking!" -ForegroundColor Green
 Write-Host ""
-Write-ColorOutput "Tip: Keep this PowerShell window open to see VM status" "Cyan"
+Write-Host "Tip: Keep this PowerShell window open to see VM status" -ForegroundColor Cyan
 Write-Host ""
