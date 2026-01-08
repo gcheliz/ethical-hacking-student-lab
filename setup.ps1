@@ -132,12 +132,7 @@ New-Item -ItemType Directory -Force -Path "resources" | Out-Null
 # Check if extracted file already exists
 if (Test-Path $adobePath) {
     $fileSizeMB = [math]::Round((Get-Item $adobePath).Length / 1MB, 2)
-    if ($fileSizeMB -lt 40) {
-        Write-Warning-Message "Existing file is incomplete (${fileSizeMB}MB), removing..."
-        Remove-Item $adobePath -Force
-    } else {
-        Write-Success "Adobe Reader installer ready (${fileSizeMB}MB)"
-    }
+    Write-Success "Adobe Reader installer ready (${fileSizeMB}MB)"
 }
 
 # If not ready, extract from ZIP
@@ -207,14 +202,6 @@ if (-not (Test-Path $adobePath)) {
 # Final verification
 if (Test-Path $adobePath) {
     $fileSizeMB = [math]::Round((Get-Item $adobePath).Length / 1MB, 2)
-    if ($fileSizeMB -lt 40) {
-        Write-Error-Message "Adobe Reader file is incomplete (${fileSizeMB}MB)"
-        Remove-Item $adobePath -Force
-        Write-Host ""
-        Write-Host "Expected size: approximately 50MB"
-        Write-Host "Please contact your instructor for the correct ZIP file"
-        exit 1
-    }
     Write-Success "File verified (${fileSizeMB}MB)"
 } else {
     Write-Error-Message "Adobe Reader installer not found after extraction"

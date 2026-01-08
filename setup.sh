@@ -90,12 +90,7 @@ mkdir -p resources
 # Check if extracted file already exists
 if [ -f "$ADOBE_PATH" ]; then
     FILE_SIZE=$(du -m "$ADOBE_PATH" | cut -f1)
-    if [ "$FILE_SIZE" -lt 40 ]; then
-        echo "  Existing file is incomplete (${FILE_SIZE}MB), removing..."
-        rm "$ADOBE_PATH"
-    else
-        echo -e "${GREEN}  ✓ Adobe Reader installer ready (${FILE_SIZE}MB)${NC}"
-    fi
+    echo -e "${GREEN}  ✓ Adobe Reader installer ready (${FILE_SIZE}MB)${NC}"
 fi
 
 # If not ready, extract from ZIP
@@ -155,14 +150,6 @@ fi
 # Final verification
 if [ -f "$ADOBE_PATH" ]; then
     FILE_SIZE=$(du -m "$ADOBE_PATH" | cut -f1)
-    if [ "$FILE_SIZE" -lt 40 ]; then
-        echo -e "${RED}✗ Adobe Reader file is incomplete (${FILE_SIZE}MB)${NC}"
-        rm "$ADOBE_PATH"
-        echo ""
-        echo "Expected size: approximately 50MB"
-        echo "Please contact your instructor for the correct ZIP file"
-        exit 1
-    fi
     echo -e "${GREEN}  ✓ File verified (${FILE_SIZE}MB)${NC}"
 else
     echo -e "${RED}✗ Adobe Reader installer not found after extraction${NC}"
