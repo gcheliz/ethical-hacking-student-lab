@@ -26,6 +26,17 @@ This repository provides a **fully automated, local ethical hacking lab** that d
 
 ### One-Command Setup
 
+**For Windows (PowerShell):**
+```powershell
+# Clone the repository
+git clone https://github.com/your-org/ethical-hacking-pdf-lab.git
+cd ethical-hacking-pdf-lab
+
+# Run automated setup (15-30 minutes)
+.\setup.ps1
+```
+
+**For Linux/macOS (Bash):**
 ```bash
 # Clone the repository
 git clone https://github.com/your-org/ethical-hacking-pdf-lab.git
@@ -52,9 +63,8 @@ cd /vagrant/exploits
 
 ### Reset When Done
 
-```bash
-./reset.sh
-```
+**Windows:** `.\reset.ps1`
+**Linux/macOS:** `./reset.sh`
 
 ---
 
@@ -130,6 +140,12 @@ cd ethical-hacking-pdf-lab
 
 ### Step 3: Run Setup Script
 
+**Windows (PowerShell - Run as Administrator recommended):**
+```powershell
+.\setup.ps1
+```
+
+**Linux/macOS (Bash):**
 ```bash
 ./setup.sh
 ```
@@ -217,9 +233,8 @@ download C:\file.txt # Download file
 
 ### Reset to Clean State
 
-```bash
-./reset.sh
-```
+**Windows:** `.\reset.ps1`
+**Linux/macOS:** `./reset.sh`
 
 Restores both VMs to fresh installation (30 seconds)
 
@@ -233,20 +248,21 @@ vagrant status
 ### Stop VMs
 
 ```bash
+cd vagrant
 vagrant halt
 ```
 
 ### Start VMs
 
 ```bash
+cd vagrant
 vagrant up
 ```
 
 ### Complete Cleanup
 
-```bash
-./cleanup.sh
-```
+**Windows:** `.\cleanup.ps1`
+**Linux/macOS:** `./cleanup.sh`
 
 Removes all VMs and frees disk space
 
