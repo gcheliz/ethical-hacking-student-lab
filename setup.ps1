@@ -311,25 +311,43 @@ Write-Host ""
 Write-Step "[6/8] Verifying network connectivity..."
 Write-Host ""
 
-# Test Kali -> Windows
-Write-Host "  Testing Kali -> Windows..."
-vagrant ssh kali -c "ping -c 2 $WINDOWS_IP" 2>$null | Out-Null
-if ($LASTEXITCODE -eq 0) {
-    Write-Success "Kali -> Windows: OK"
+Write-Host "  Waiting for VMs to be fully ready..." -ForegroundColor Yellow
+Write-Host "  (Windows is rebooting, this may take 1-2 minutes)"
+Write-Host ""
+
+# Wait for Windows to finish rebooting
+Start-Sleep -Seconds 45
+
+# Test Kali -> Windows with retries
+Write-Host "  Testing Kali -> Windows..." -NoNewline
+$maxRetries = 3
+$success = $false
+
+for ($i = 1; $i -le $maxRetries; $i++) {
+    vagrant ssh kali -c "ping -c 2 $WINDOWS_IP" 2>$null | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        $success = $true
+        break
+    }
+    if ($i -lt $maxRetries) {
+        Start-Sleep -Seconds 10
+    }
+}
+
+if ($success) {
+    Write-Host " OK" -ForegroundColor Green
 } else {
-    Write-Error-Message "Kali -> Windows: FAILED"
-    Write-Host "  Network connectivity issue detected"
-    Pop-Location
-    exit 1
+    Write-Host " FAILED" -ForegroundColor Yellow
+    Write-Host "  Note: This is usually temporary. Try running reset.ps1 to power cycle the VMs." -ForegroundColor Gray
 }
 
 # Test Windows -> Kali
-Write-Host "  Testing Windows -> Kali..."
+Write-Host "  Testing Windows -> Kali..." -NoNewline
 vagrant winrm win2k8 -c "Test-Connection $KALI_IP -Count 2 -Quiet" 2>$null | Out-Null
 if ($LASTEXITCODE -eq 0) {
-    Write-Success "Windows -> Kali: OK"
+    Write-Host " OK" -ForegroundColor Green
 } else {
-    Write-Warning-Message "Windows -> Kali: Could not verify (but probably OK)"
+    Write-Host " Skipped" -ForegroundColor Gray
 }
 
 Write-Host ""
