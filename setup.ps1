@@ -149,10 +149,39 @@ if (-not (Test-Path $adobePath)) {
             # Use tar (available in Windows 10 1803+)
             $tarPath = "C:\Windows\System32\tar.exe"
             if (Test-Path $tarPath) {
+                # First, list contents to verify
+                Write-Host "  Checking archive contents..."
+                $tarContents = & $tarPath -tzf $adobeTarGz 2>&1
+                Write-Host "  Archive contains: $tarContents"
+
+                # Extract to resources directory
                 Push-Location resources
-                & $tarPath -xzf "AdobeReader_9.5.tar.gz" 2>&1 | Out-Null
+                $extractOutput = & $tarPath -xzf "AdobeReader_9.5.tar.gz" 2>&1
                 Pop-Location
-                Write-Success "Extracted from AdobeReader_9.5.tar.gz"
+
+                # Verify extraction immediately
+                if (Test-Path $adobePath) {
+                    $fileSizeMB = [math]::Round((Get-Item $adobePath).Length / 1MB, 2)
+                    Write-Success "Extracted successfully (${fileSizeMB}MB)"
+                } else {
+                    # Check if file was extracted with a different name
+                    Write-Host "  Extraction output: $extractOutput"
+                    $extractedFiles = Get-ChildItem -Path resources -Filter "*.exe" | Select-Object -First 5
+                    if ($extractedFiles) {
+                        Write-Host "  Found .exe files in resources:"
+                        foreach ($file in $extractedFiles) {
+                            Write-Host "    - $($file.Name) ($([math]::Round($file.Length / 1MB, 2))MB)"
+                        }
+                        Write-Error-Message "Expected file 'AdobeReader_9.5.exe' not found"
+                        Write-Host ""
+                        Write-Host "The archive may contain a different filename."
+                        Write-Host "Please rename the extracted .exe to 'AdobeReader_9.5.exe' in the resources folder"
+                    } else {
+                        Write-Error-Message "No files were extracted"
+                        Write-Host "  Archive contents were: $tarContents"
+                    }
+                    exit 1
+                }
             } else {
                 # Fallback: manual extraction instructions
                 Write-Error-Message "tar.exe not found (requires Windows 10 1803+)"
