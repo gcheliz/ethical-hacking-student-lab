@@ -1,18 +1,24 @@
 # Configure static IP on host-only network
 
-Write-Host "═══════════════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "===================================================" -ForegroundColor Cyan
 Write-Host "  Configuring Network" -ForegroundColor Cyan
-Write-Host "═══════════════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "===================================================" -ForegroundColor Cyan
 Write-Host
 
-# Get current IP
-$currentIP = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.IPAddress -match "192.168.56"}).IPAddress
+# Get current IP (use WMI for Server 2008 R2 compatibility)
+$adapter = Get-WmiObject Win32_NetworkAdapterConfiguration | Where-Object {$_.IPAddress -ne $null -and $_.IPAddress -match "192.168.56"}
 
-if ($currentIP -eq "192.168.56.102") {
-    Write-Host "✓ IP address already configured: $currentIP" -ForegroundColor Green
+if ($adapter) {
+    $currentIP = $adapter.IPAddress | Where-Object {$_ -match "192.168.56"} | Select-Object -First 1
+
+    if ($currentIP -eq "192.168.56.102") {
+        Write-Host "IP address already configured: $currentIP" -ForegroundColor Green
+    } else {
+        Write-Host "Current IP: $currentIP" -ForegroundColor Yellow
+        Write-Host "Expected IP: 192.168.56.102" -ForegroundColor Yellow
+    }
 } else {
-    Write-Host "Current IP: $currentIP" -ForegroundColor Yellow
-    Write-Host "Expected IP: 192.168.56.102" -ForegroundColor Yellow
+    Write-Host "No network adapter found with 192.168.56.x IP" -ForegroundColor Yellow
 }
 
 # Test connectivity to Kali

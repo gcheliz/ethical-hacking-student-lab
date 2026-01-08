@@ -11,7 +11,7 @@ if (Test-Path "C:\vagrant\docs") {
     $Shortcut.TargetPath = "C:\vagrant\docs"
     $Shortcut.Description = "Lab Documentation and Guides"
     $Shortcut.Save()
-    Write-Host "✓ Lab Documentation shortcut created" -ForegroundColor Green
+    Write-Host "Lab Documentation shortcut created" -ForegroundColor Green
 }
 
 Write-Host "Desktop shortcuts created" -ForegroundColor Green
