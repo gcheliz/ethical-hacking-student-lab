@@ -9,6 +9,25 @@ Write-Host
 $DesktopPath = "C:\Users\vagrant\Desktop"
 $VagrantPath = "C:\vagrant\exploits"
 
+# Check if shared folder exists
+Write-Host "Checking shared folder..."
+if (-not (Test-Path $VagrantPath)) {
+    Write-Host "[ERROR] Shared folder not found: $VagrantPath" -ForegroundColor Red
+    Write-Host "        Shared folder may not be mounted" -ForegroundColor Red
+    Write-Host
+    Write-Host "Available drives:" -ForegroundColor Yellow
+    Get-PSDrive -PSProvider FileSystem | Format-Table -AutoSize
+    exit 1
+}
+
+Write-Host "[OK] Shared folder exists: $VagrantPath" -ForegroundColor Green
+Write-Host
+
+# List contents of shared folder
+Write-Host "Contents of shared folder:"
+Get-ChildItem $VagrantPath | Format-Table Name, Length, LastWriteTime
+Write-Host
+
 # PDFs to copy
 $PDFs = @(
     "JOAN-ESPINACH-TRD.pdf",
