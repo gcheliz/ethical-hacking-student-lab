@@ -1,0 +1,57 @@
+Educational Use License
+
+Copyright (c) 2026 Ethical Hacking Student Lab Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Lab"), to use the Lab
+for educational and learning purposes, subject to the following conditions:
+
+PERMITTED USES:
+1. Use for learning ethical hacking and penetration testing
+2. Use in academic courses and training programs
+3. Personal study and skill development
+4. Sharing with students and colleagues for educational purposes
+5. Modification for educational improvements
+
+PROHIBITED USES:
+1. Commercial use or monetization
+2. Use on systems without explicit written authorization
+3. Malicious or illegal activities
+4. Distribution of malicious files outside lab environment
+5. Use on production or internet-facing systems
+
+ETHICAL REQUIREMENTS:
+1. Only use on isolated lab VMs provided in this repository
+2. Never test on systems you don't own or have written permission to test
+3. Follow all applicable laws and regulations
+4. Maintain responsible disclosure practices
+5. Understand and follow ethical hacking principles
+
+DISCLAIMER:
+THE LAB IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE LAB OR THE USE OR OTHER DEALINGS IN THE LAB.
+
+LEGAL NOTICE:
+Unauthorized access to computer systems is illegal in most jurisdictions.
+Users are solely responsible for ensuring their use of this lab complies with
+all applicable laws and regulations. The authors and contributors are not
+responsible for any misuse of this lab or any resulting consequences.
+
+By using this lab, you agree to:
+- Only use it for authorized educational purposes
+- Follow all ethical hacking guidelines
+- Accept full responsibility for your actions
+- Hold authors and contributors harmless from any misuse
+
+EDUCATIONAL PURPOSE:
+This lab is designed to teach defensive security by understanding offensive
+techniques. The primary goal is to help students learn how to defend against
+attacks, not to enable malicious activity.
+
+---
+
+For questions about licensing, please contact your course instructor.

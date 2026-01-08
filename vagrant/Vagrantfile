@@ -1,0 +1,127 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+
+  # =========================================================================
+  # GLOBAL SETTINGS
+  # =========================================================================
+
+  config.vm.box_check_update = false
+  config.vm.boot_timeout = 600  # 10 minutes for slower machines
+
+  # =========================================================================
+  # KALI LINUX VM (Attacker)
+  # =========================================================================
+
+  config.vm.define "kali" do |kali|
+    kali.vm.box = "kalilinux/rolling"
+    kali.vm.hostname = "kali-attacker"
+
+    # Network - Static IP on host-only network
+    kali.vm.network "private_network",
+      ip: "192.168.56.101",
+      netmask: "255.255.255.0",
+      auto_config: true
+
+    # VirtualBox provider settings
+    kali.vm.provider "virtualbox" do |vb|
+      vb.name = "Kali_PDF_Exploit_Lab"
+      vb.memory = "2048"
+      vb.cpus = 2
+      vb.gui = false  # Headless (use SSH)
+
+      # Performance optimizations
+      vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+      vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
+      vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
+      vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
+    end
+
+    # Shared folders
+    kali.vm.synced_folder "../exploits", "/vagrant/exploits"
+    kali.vm.synced_folder "../docs", "/vagrant/docs", mount_options: ["ro"]
+
+    # Provisioning - Install tools
+    kali.vm.provision "shell",
+      path: "provisioning/kali/install_tools.sh",
+      name: "Install Metasploit and tools"
+
+    # Provisioning - Configure network
+    kali.vm.provision "shell",
+      path: "provisioning/kali/configure_network.sh",
+      name: "Configure static IP"
+
+    # Provisioning - Generate exploit PDFs
+    kali.vm.provision "shell",
+      path: "provisioning/kali/create_exploits.sh",
+      privileged: false,  # Run as vagrant user
+      name: "Generate malicious PDFs"
+  end
+
+  # =========================================================================
+  # WINDOWS SERVER 2008 R2 VM (Target)
+  # =========================================================================
+
+  config.vm.define "win2k8" do |win|
+    win.vm.box = "rapid7/metasploitable3-win2k8"
+    win.vm.hostname = "win-target"
+    win.vm.communicator = "winrm"
+    win.vm.boot_timeout = 600
+    win.winrm.timeout = 1800  # 30 minutes for slow operations
+
+    # Network - Static IP on host-only network
+    win.vm.network "private_network",
+      ip: "192.168.56.102",
+      netmask: "255.255.255.0"
+
+    # VirtualBox provider settings
+    win.vm.provider "virtualbox" do |vb|
+      vb.name = "Windows_PDF_Target_Lab"
+      vb.memory = "4096"
+      vb.cpus = 2
+      vb.gui = true  # Need GUI for Adobe Reader
+
+      # GUI optimizations
+      vb.customize ["modifyvm", :id, "--vram", "128"]
+      vb.customize ["modifyvm", :id, "--accelerate3d", "on"]
+      vb.customize ["modifyvm", :id, "--clipboard", "bidirectional"]
+      vb.customize ["modifyvm", :id, "--draganddrop", "bidirectional"]
+
+      # Performance
+      vb.customize ["modifyvm", :id, "--nictype1", "82540EM"]
+      vb.customize ["modifyvm", :id, "--nictype2", "82540EM"]
+    end
+
+    # Copy Adobe Reader installer to VM
+    win.vm.provision "file",
+      source: "../resources/AdobeReader_9.5.exe",
+      destination: "C:\\AdobeReader_9.5.exe"
+
+    # Provisioning Step 1: Disable ALL security
+    win.vm.provision "shell",
+      path: "provisioning/windows/disable_security.ps1",
+      name: "Disable Windows security features"
+
+    # Provisioning Step 2: Install Adobe Reader
+    win.vm.provision "shell",
+      path: "provisioning/windows/install_adobe.ps1",
+      name: "Install and configure Adobe Reader 9.5.0"
+
+    # Provisioning Step 3: Configure network
+    win.vm.provision "shell",
+      path: "provisioning/windows/configure_network.ps1",
+      name: "Configure static IP address"
+
+    # Provisioning Step 4: Create desktop shortcuts
+    win.vm.provision "shell",
+      path: "provisioning/windows/create_shortcuts.ps1",
+      name: "Create desktop shortcuts"
+
+    # Final Step: Reboot to apply all settings
+    win.vm.provision "shell",
+      inline: "shutdown /r /t 30 /c 'Rebooting to apply all settings. VM will restart in 30 seconds.'",
+      name: "Final reboot"
+  end
+
+end
