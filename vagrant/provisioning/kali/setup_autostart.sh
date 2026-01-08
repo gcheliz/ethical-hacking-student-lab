@@ -22,7 +22,7 @@ WantedBy=multi-user.target
 EOF
 
 # Copy the server startup script
-sudo cp /vagrant/vagrant/provisioning/kali/start_http_server.sh /home/vagrant/.msf4/local/start_server.sh
+sudo cp /vagrant/provisioning/kali/start_http_server.sh /home/vagrant/.msf4/local/start_server.sh
 sudo chown vagrant:vagrant /home/vagrant/.msf4/local/start_server.sh
 sudo chmod +x /home/vagrant/.msf4/local/start_server.sh
 
