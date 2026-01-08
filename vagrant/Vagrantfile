@@ -97,6 +97,11 @@ Vagrant.configure("2") do |config|
       source: "../resources/AdobeReader_9.5.exe",
       destination: "C:\\AdobeReader_9.5.exe"
 
+    # Copy PDF download script to Desktop
+    win.vm.provision "file",
+      source: "../exploits/download_and_open.ps1",
+      destination: "C:\\Users\\vagrant\\Desktop\\download_and_open.ps1"
+
     # Provisioning Step 1: Disable ALL security
     win.vm.provision "shell",
       path: "provisioning/windows/disable_security.ps1",
