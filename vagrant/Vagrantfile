@@ -105,7 +105,16 @@ Vagrant.configure("2") do |config|
       source: "../resources/AdobeReader_9.5.exe",
       destination: "C:\\AdobeReader_9.5.exe"
 
-    # Copy PDF download script to Desktop
+    # Copy malicious PDFs directly to Desktop (EASY MODE - just double-click!)
+    win.vm.provision "file",
+      source: "../exploits/JOAN-ESPINACH-TRD.pdf",
+      destination: "C:\\Users\\vagrant\\Desktop\\JOAN-ESPINACH-TRD.pdf"
+
+    win.vm.provision "file",
+      source: "../exploits/JOAN-ESPINACH-ALT.pdf",
+      destination: "C:\\Users\\vagrant\\Desktop\\JOAN-ESPINACH-ALT.pdf"
+
+    # Copy PDF download script to Desktop (ADVANCED MODE - HTTP server demo)
     win.vm.provision "file",
       source: "../exploits/download_and_open.ps1",
       destination: "C:\\Users\\vagrant\\Desktop\\download_and_open.ps1"
