@@ -309,6 +309,20 @@ if ($existingVMs) {
         & $vboxManage unregistervm "$vmName" --delete 2>$null | Out-Null
     }
 }
+
+# Remove VM directory if it exists
+$vmDir = "$env:USERPROFILE\VirtualBox VMs\Windows_PDF_Target_Lab"
+if (Test-Path $vmDir) {
+    Write-Host "." -NoNewline
+    Remove-Item -Path $vmDir -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+# Remove any orphaned metasploitable3-win2k8 directories
+Get-ChildItem -Path "$env:USERPROFILE\VirtualBox VMs" -Filter "metasploitable3-win2k8_*" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+    Write-Host "." -NoNewline
+    Remove-Item -Path $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+}
+
 Write-Host " Done" -ForegroundColor Green
 
 # Bring up Windows VM
