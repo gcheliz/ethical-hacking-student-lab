@@ -119,70 +119,89 @@ if ($totalMemoryGB -lt $REQUIRED_RAM_GB) {
 
 Write-Host ""
 
-# STEP 2: Download Adobe Reader
-Write-Step "[2/8] Checking Adobe Reader installer..."
+# STEP 2: Extract Adobe Reader from tar.gz
+Write-Step "[2/8] Preparing Adobe Reader installer..."
 Write-Host ""
 
 $adobePath = "resources\AdobeReader_9.5.exe"
+$adobeTarGz = "resources\AdobeReader_9.5.tar.gz"
 
+# Ensure resources directory exists
+New-Item -ItemType Directory -Force -Path "resources" | Out-Null
+
+# Check if extracted file already exists
+if (Test-Path $adobePath) {
+    $fileSizeMB = [math]::Round((Get-Item $adobePath).Length / 1MB, 2)
+    if ($fileSizeMB -lt 40) {
+        Write-Warning-Message "Existing file is incomplete (${fileSizeMB}MB), removing..."
+        Remove-Item $adobePath -Force
+    } else {
+        Write-Success "Adobe Reader installer ready (${fileSizeMB}MB)"
+    }
+}
+
+# If not ready, extract from tar.gz
 if (-not (Test-Path $adobePath)) {
-    Write-Host "  Downloading Adobe Reader 9.5.0 (this may take a few minutes)..."
-    New-Item -ItemType Directory -Force -Path "resources" | Out-Null
+    if (Test-Path $adobeTarGz) {
+        Write-Host "  Extracting Adobe Reader from archive..."
 
-    $downloaded = $false
-
-    # Try Internet Archive
-    if (-not $downloaded) {
-        Write-Host "  Trying Internet Archive..."
         try {
-            $url = "https://archive.org/download/adobe-reader-9.5/AdbeRdr950_en_US.exe"
-            Invoke-WebRequest -Uri $url -OutFile $adobePath -UseBasicParsing
-            $downloaded = $true
-            Write-Success "Downloaded from Internet Archive"
+            # Use tar (available in Windows 10 1803+)
+            $tarPath = "C:\Windows\System32\tar.exe"
+            if (Test-Path $tarPath) {
+                Push-Location resources
+                & $tarPath -xzf "AdobeReader_9.5.tar.gz" 2>&1 | Out-Null
+                Pop-Location
+                Write-Success "Extracted from AdobeReader_9.5.tar.gz"
+            } else {
+                # Fallback: manual extraction instructions
+                Write-Error-Message "tar.exe not found (requires Windows 10 1803+)"
+                Write-Host ""
+                Write-Host "Please extract manually:"
+                Write-Host "  1. Open resources\AdobeReader_9.5.tar.gz with 7-Zip or WinRAR"
+                Write-Host "  2. Extract AdobeReader_9.5.exe to resources\ folder"
+                Write-Host "  3. Run setup.ps1 again"
+                Write-Host ""
+                Write-Host "Or download directly: .\download-adobe-retry.ps1"
+                exit 1
+            }
         } catch {
-            Write-Warning-Message "Failed to download from Internet Archive"
+            Write-Error-Message "Failed to extract: $($_.Exception.Message)"
+            Write-Host ""
+            Write-Host "Try extracting manually with 7-Zip or WinRAR"
+            Write-Host "Or download directly: .\download-adobe-retry.ps1"
+            exit 1
         }
-    }
-
-    # Try alternative source
-    if (-not $downloaded) {
-        Write-Host "  Trying alternative source..."
-        try {
-            $url = "https://ardownload2.adobe.com/pub/adobe/reader/win/9.x/9.5.0/en_US/AdbeRdr950_en_US.exe"
-            Invoke-WebRequest -Uri $url -OutFile $adobePath -UseBasicParsing
-            $downloaded = $true
-            Write-Success "Downloaded from Adobe FTP"
-        } catch {
-            Write-Warning-Message "Failed to download from alternative source"
-        }
-    }
-
-    if (-not $downloaded) {
-        Write-Error-Message "Failed to download Adobe Reader"
+    } else {
+        Write-Error-Message "Adobe Reader archive not found!"
         Write-Host ""
-        Write-Host "Please manually download from:"
-        Write-Host "  https://archive.org/download/adobe-reader-9.5/AdbeRdr950_en_US.exe"
-        Write-Host "And save to: $adobePath"
+        Write-Host "The file resources\AdobeReader_9.5.tar.gz is missing."
+        Write-Host ""
+        Write-Host "Options:" -ForegroundColor Yellow
+        Write-Host "  1. Contact your instructor for the archive file"
+        Write-Host "  2. Run: .\download-adobe-retry.ps1"
+        Write-Host "  3. See: ADOBE_DOWNLOAD_SOURCES.md for manual download"
+        Write-Host ""
         exit 1
     }
-} else {
-    Write-Success "Adobe Reader installer ready"
 }
 
-# Verify file size
-$fileSizeMB = [math]::Round((Get-Item $adobePath).Length / 1MB, 2)
-if ($fileSizeMB -lt 40) {
-    Write-Error-Message "Adobe Reader file seems incomplete (${fileSizeMB}MB)"
-    Remove-Item $adobePath -Force
-    Write-Host ""
-    Write-Host "The file is incomplete. Please download manually:"
-    Write-Host "  https://archive.org/download/adobe-reader-9.5/AdbeRdr950_en_US.exe"
-    Write-Host ""
-    Write-Host "Save as: resources\AdobeReader_9.5.exe"
-    Write-Host "Expected size: approximately 50MB"
+# Final verification
+if (Test-Path $adobePath) {
+    $fileSizeMB = [math]::Round((Get-Item $adobePath).Length / 1MB, 2)
+    if ($fileSizeMB -lt 40) {
+        Write-Error-Message "Adobe Reader file is incomplete (${fileSizeMB}MB)"
+        Remove-Item $adobePath -Force
+        Write-Host ""
+        Write-Host "Expected size: approximately 50MB"
+        Write-Host "Please re-download the tar.gz file or contact your instructor"
+        exit 1
+    }
+    Write-Success "File verified (${fileSizeMB}MB)"
+} else {
+    Write-Error-Message "Adobe Reader installer not found after extraction"
     exit 1
 }
-Write-Success "File verified (${fileSizeMB}MB)"
 
 Write-Host ""
 
