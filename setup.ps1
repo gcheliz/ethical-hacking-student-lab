@@ -247,23 +247,37 @@ Write-Host ""
 
 Push-Location vagrant
 
-# Check if Kali is already running
-$kaliStatus = vagrant status kali 2>$null | Select-String "running"
-if ($kaliStatus) {
-    Write-ColorOutput "  Kali VM already running, destroying and rebuilding..." "Cyan"
-    vagrant destroy kali -f
-}
+# Aggressive cleanup of all Kali lab VMs and directories
+Write-Host "  Cleaning up old VirtualBox VMs and directories..." -NoNewline
 
-# Clean up any leftover VirtualBox VMs with the same name
-Write-Host "  Cleaning up old VirtualBox VMs..." -NoNewline
-$existingVMs = & $vboxManage list vms | Select-String "Kali_PDF_Exploit_Lab"
-if ($existingVMs) {
-    foreach ($vm in $existingVMs) {
-        $vmName = $vm -replace '.*"(.+?)".*', '$1'
+# First: Unregister ALL Kali lab-related VMs
+$allVMs = & $vboxManage list vms 2>$null
+if ($allVMs) {
+    $kaliVMs = $allVMs | Select-String "Kali_PDF_Exploit_Lab"
+    foreach ($vm in $kaliVMs) {
+        $vmUUID = $vm -replace '.*\{(.+?)\}.*', '$1'
         Write-Host "." -NoNewline
-        & $vboxManage unregistervm "$vmName" --delete 2>$null | Out-Null
+        & $vboxManage controlvm $vmUUID poweroff 2>$null | Out-Null
+        Start-Sleep -Milliseconds 500
+        & $vboxManage unregistervm $vmUUID --delete 2>$null | Out-Null
     }
 }
+
+# Second: Remove Kali VM directories
+Get-ChildItem -Path "$env:USERPROFILE\VirtualBox VMs" -Directory -ErrorAction SilentlyContinue | Where-Object {
+    $_.Name -like "Kali_PDF_Exploit_Lab*"
+} | ForEach-Object {
+    Write-Host "." -NoNewline
+    try {
+        Remove-Item -Path $_.FullName -Recurse -Force -ErrorAction Stop
+    } catch {
+        cmd /c "rd /s /q `"$($_.FullName)`"" 2>$null
+    }
+}
+
+# Third: Destroy vagrant machine
+vagrant destroy kali -f 2>$null | Out-Null
+
 Write-Host " Done" -ForegroundColor Green
 
 # Bring up Kali VM
@@ -292,36 +306,47 @@ Write-Host "  - Disabling all security features"
 Write-Host "  - Configuring network"
 Write-Host ""
 
-# Check if Windows is already running
-$winStatus = vagrant status win2k8 2>$null | Select-String "running"
-if ($winStatus) {
-    Write-ColorOutput "  Windows VM already running, destroying and rebuilding..." "Cyan"
-    vagrant destroy win2k8 -f
-}
+# Aggressive cleanup of all Windows lab VMs and directories
+Write-Host "  Cleaning up old VirtualBox VMs and directories..." -NoNewline
 
-# Clean up any leftover VirtualBox VMs with the same name
-Write-Host "  Cleaning up old VirtualBox VMs..." -NoNewline
-$existingVMs = & $vboxManage list vms | Select-String "Windows_PDF_Target_Lab"
-if ($existingVMs) {
-    foreach ($vm in $existingVMs) {
-        $vmName = $vm -replace '.*"(.+?)".*', '$1'
+# First: Unregister ALL lab-related VMs (by name pattern)
+$allVMs = & $vboxManage list vms 2>$null
+if ($allVMs) {
+    $labVMs = $allVMs | Select-String "(Windows_PDF_Target_Lab|metasploitable3-win2k8)"
+    foreach ($vm in $labVMs) {
+        $vmUUID = $vm -replace '.*\{(.+?)\}.*', '$1'
         Write-Host "." -NoNewline
-        & $vboxManage unregistervm "$vmName" --delete 2>$null | Out-Null
+        # Power off if running
+        & $vboxManage controlvm $vmUUID poweroff 2>$null | Out-Null
+        Start-Sleep -Milliseconds 500
+        # Unregister and delete
+        & $vboxManage unregistervm $vmUUID --delete 2>$null | Out-Null
     }
 }
 
-# Remove VM directory if it exists
-$vmDir = "$env:USERPROFILE\VirtualBox VMs\Windows_PDF_Target_Lab"
-if (Test-Path $vmDir) {
-    Write-Host "." -NoNewline
-    Remove-Item -Path $vmDir -Recurse -Force -ErrorAction SilentlyContinue
+# Second: Remove all VM directories (even if unregistered)
+$vmDirsToRemove = @(
+    "$env:USERPROFILE\VirtualBox VMs\Windows_PDF_Target_Lab*",
+    "$env:USERPROFILE\VirtualBox VMs\metasploitable3-win2k8*"
+)
+
+foreach ($pattern in $vmDirsToRemove) {
+    Get-ChildItem -Path "$env:USERPROFILE\VirtualBox VMs" -Directory -ErrorAction SilentlyContinue | Where-Object {
+        $_.Name -like ($pattern -replace '.*\\', '')
+    } | ForEach-Object {
+        Write-Host "." -NoNewline
+        try {
+            # Try to unlock and remove
+            Remove-Item -Path $_.FullName -Recurse -Force -ErrorAction Stop
+        } catch {
+            # If locked, try with more force
+            cmd /c "rd /s /q `"$($_.FullName)`"" 2>$null
+        }
+    }
 }
 
-# Remove any orphaned metasploitable3-win2k8 directories
-Get-ChildItem -Path "$env:USERPROFILE\VirtualBox VMs" -Filter "metasploitable3-win2k8_*" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-    Write-Host "." -NoNewline
-    Remove-Item -Path $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
-}
+# Third: Destroy vagrant machine (if registered)
+vagrant destroy win2k8 -f 2>$null | Out-Null
 
 Write-Host " Done" -ForegroundColor Green
 
