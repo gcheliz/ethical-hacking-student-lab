@@ -18,6 +18,14 @@ Before starting, ensure you have:
 
 ## Setup (One Command)
 
+**For Windows (PowerShell):**
+```powershell
+git clone https://github.com/your-org/ethical-hacking-pdf-lab.git
+cd ethical-hacking-pdf-lab
+.\setup.ps1
+```
+
+**For Linux/macOS (Bash):**
 ```bash
 git clone https://github.com/your-org/ethical-hacking-pdf-lab.git
 cd ethical-hacking-pdf-lab
@@ -81,9 +89,13 @@ shell                # Get Windows command shell
 
 ## Reset Lab (30 seconds)
 
+**Windows:**
+```powershell
+.\reset.ps1
+```
+
+**Linux/macOS:**
 ```bash
-# Return to lab root directory
-cd ..
 ./reset.sh
 ```
 
@@ -93,9 +105,8 @@ This restores both VMs to clean state.
 
 ## Complete Cleanup
 
-```bash
-./cleanup.sh
-```
+**Windows:** `.\cleanup.ps1`
+**Linux/macOS:** `./cleanup.sh`
 
 This removes all VMs and frees disk space.
 
