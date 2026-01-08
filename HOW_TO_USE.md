@@ -40,8 +40,9 @@ cd /vagrant/exploits
 ```
 
 ### On Windows: Download via HTTP
-Double-click `download_and_open.ps1` on Desktop
-- Or manually browse to: `http://192.168.56.101:8080/`
+Open browser and go to: `http://192.168.56.101:8080/`
+- Click on the PDF to download it
+- Open the downloaded PDF with Adobe Reader
 
 ---
 
