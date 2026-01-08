@@ -254,6 +254,18 @@ if ($kaliStatus) {
     vagrant destroy kali -f
 }
 
+# Clean up any leftover VirtualBox VMs with the same name
+Write-Host "  Cleaning up old VirtualBox VMs..." -NoNewline
+$existingVMs = & $vboxManage list vms | Select-String "Kali_PDF_Exploit_Lab"
+if ($existingVMs) {
+    foreach ($vm in $existingVMs) {
+        $vmName = $vm -replace '.*"(.+?)".*', '$1'
+        Write-Host "." -NoNewline
+        & $vboxManage unregistervm "$vmName" --delete 2>$null | Out-Null
+    }
+}
+Write-Host " Done" -ForegroundColor Green
+
 # Bring up Kali VM
 vagrant up kali --provider virtualbox
 
@@ -286,6 +298,18 @@ if ($winStatus) {
     Write-ColorOutput "  Windows VM already running, destroying and rebuilding..." "Cyan"
     vagrant destroy win2k8 -f
 }
+
+# Clean up any leftover VirtualBox VMs with the same name
+Write-Host "  Cleaning up old VirtualBox VMs..." -NoNewline
+$existingVMs = & $vboxManage list vms | Select-String "Windows_PDF_Target_Lab"
+if ($existingVMs) {
+    foreach ($vm in $existingVMs) {
+        $vmName = $vm -replace '.*"(.+?)".*', '$1'
+        Write-Host "." -NoNewline
+        & $vboxManage unregistervm "$vmName" --delete 2>$null | Out-Null
+    }
+}
+Write-Host " Done" -ForegroundColor Green
 
 # Bring up Windows VM
 vagrant up win2k8 --provider virtualbox
