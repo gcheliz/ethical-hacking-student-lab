@@ -300,7 +300,17 @@ Write-Host ""
 Write-Step "[4.5/9] Verifying PDF files synced to host..."
 Write-Host ""
 
-Write-Host "  Waiting for shared folder to sync..." -ForegroundColor Yellow
+Write-Host "  Checking exploits folder on host..." -ForegroundColor Yellow
+Write-Host "  Host path: $((Get-Item '..\exploits').FullName)" -ForegroundColor Gray
+Write-Host ""
+
+# Check current state
+Write-Host "  Current files in exploits folder:" -ForegroundColor Cyan
+Get-ChildItem "..\exploits\*" -ErrorAction SilentlyContinue | ForEach-Object {
+    $sizeKB = [math]::Round($_.Length / 1KB, 2)
+    Write-Host "    - $($_.Name) (${sizeKB}KB)" -ForegroundColor Gray
+}
+Write-Host ""
 
 # Wait up to 30 seconds for PDFs to appear on host
 $maxWait = 30
@@ -308,9 +318,9 @@ $waitCount = 0
 $pdfPath = "..\exploits\JOAN-ESPINACH-TRD.pdf"
 
 while (-not (Test-Path $pdfPath) -and ($waitCount -lt $maxWait)) {
-    Write-Host "  Waiting for PDFs to sync... ($waitCount/$maxWait seconds)" -ForegroundColor Gray
-    Start-Sleep -Seconds 1
-    $waitCount++
+    Write-Host "  Waiting for PDFs to sync from Kali... ($waitCount/$maxWait seconds)" -ForegroundColor Yellow
+    Start-Sleep -Seconds 2
+    $waitCount += 2
 }
 
 if (Test-Path $pdfPath) {
@@ -319,16 +329,61 @@ if (Test-Path $pdfPath) {
 
     # List all PDFs found
     Write-Host ""
-    Write-Host "  PDFs in exploits folder:" -ForegroundColor Cyan
+    Write-Host "  PDFs verified on host:" -ForegroundColor Green
     Get-ChildItem "..\exploits\*.pdf" -ErrorAction SilentlyContinue | ForEach-Object {
-        $sizeMB = [math]::Round($_.Length / 1KB, 2)
-        Write-Host "    - $($_.Name) (${sizeMB}KB)" -ForegroundColor Green
+        $sizeKB = [math]::Round($_.Length / 1KB, 2)
+        Write-Host "    ✓ $($_.Name) (${sizeKB}KB)" -ForegroundColor Green
     }
 } else {
-    Write-Warning-Message "PDFs not found on host after $maxWait seconds"
-    Write-Host "  This may cause issues with Windows provisioning" -ForegroundColor Yellow
-    Write-Host "  The PDFs may be generated inside Kali VM only" -ForegroundColor Yellow
+    Write-Warning-Message "PDFs not synced to host automatically"
     Write-Host ""
+    Write-Host "  Attempting manual copy from Kali VM..." -ForegroundColor Yellow
+
+    # Try to manually copy PDFs from Kali to host
+    $copyResult = vagrant ssh kali -c "cp -v ~/.msf4/local/*.pdf /vagrant/exploits/ 2>&1" 2>&1
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "  Copy command executed" -ForegroundColor Gray
+        Start-Sleep -Seconds 3  # Wait for VirtualBox to sync
+
+        # Check again
+        if (Test-Path $pdfPath) {
+            Write-Success "PDFs manually copied to host"
+            Get-ChildItem "..\exploits\*.pdf" -ErrorAction SilentlyContinue | ForEach-Object {
+                $sizeKB = [math]::Round($_.Length / 1KB, 2)
+                Write-Host "    ✓ $($_.Name) (${sizeKB}KB)" -ForegroundColor Green
+            }
+        } else {
+            Write-Warning-Message "Manual copy may have failed"
+            Write-Host "  Windows provisioning may not have PDFs on Desktop" -ForegroundColor Yellow
+            Write-Host "  You can copy them manually later" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Warning-Message "Could not copy PDFs from Kali"
+        Write-Host "  Windows provisioning may not have PDFs on Desktop" -ForegroundColor Yellow
+    }
+}
+
+Write-Host ""
+
+# IMPORTANT: Halt Kali to flush shared folder to host
+Write-Host "  Halting Kali VM to flush shared folders..." -ForegroundColor Yellow
+vagrant halt kali 2>$null | Out-Null
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "  ✓ Kali VM halted (will restart automatically)" -ForegroundColor Green
+    Start-Sleep -Seconds 5  # Give VirtualBox time to complete unmount
+} else {
+    Write-Host "  ⚠ Could not halt Kali (may still be provisioning)" -ForegroundColor Yellow
+}
+
+# Final check that PDFs persisted on host after halt
+Write-Host "  Final verification after Kali halt..." -ForegroundColor Cyan
+$pdfCount = (Get-ChildItem "..\exploits\*.pdf" -ErrorAction SilentlyContinue).Count
+if ($pdfCount -gt 0) {
+    Write-Host "    ✓ $pdfCount PDF(s) confirmed on host filesystem" -ForegroundColor Green
+} else {
+    Write-Host "    ⚠ No PDFs found on host!" -ForegroundColor Red
+    Write-Host "      Windows VM will not have PDFs on Desktop" -ForegroundColor Red
 }
 
 Write-Host ""
@@ -403,6 +458,17 @@ if ($LASTEXITCODE -eq 0) {
     Write-Error-Message "Failed to build Windows VM"
     Pop-Location
     exit 1
+}
+
+Write-Host ""
+
+# Restart Kali VM (was halted earlier to flush shared folders)
+Write-Host "Restarting Kali VM..." -ForegroundColor Yellow
+vagrant up kali --provider virtualbox 2>$null | Out-Null
+if ($LASTEXITCODE -eq 0) {
+    Write-Success "Kali VM restarted"
+} else {
+    Write-Warning-Message "Could not restart Kali VM"
 }
 
 Write-Host ""
