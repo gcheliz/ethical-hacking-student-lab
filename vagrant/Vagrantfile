@@ -33,14 +33,20 @@ Vagrant.configure("2") do |config|
     kali.ssh.keep_alive = true
     kali.vm.boot_timeout = 900  # 15 minutes for Kali
 
-    # Network - ONLY host-only network (no NAT)
-    # Single adapter for direct VM-to-VM communication
-    # This eliminates routing issues and ensures clean exploit traffic
+    # Network - host-only network for VM-to-VM communication
+    # NAT adapter (eth0/adapter 1) is added automatically by Vagrant for management
+    # Host-only adapter (eth1/adapter 2) is for exploit traffic
     kali.vm.network "private_network",
       ip: "192.168.56.101",
       netmask: "255.255.255.0",
       auto_config: true,
       virtualbox__intnet: false  # Use host-only adapter, not internal network
+
+    # Optional: Use host-only network for SSH instead of NAT
+    # Uncomment to SSH via 192.168.56.101 instead of NAT
+    # Note: This requires the host-only network to be configured first
+    # kali.ssh.host = "192.168.56.101"
+    # kali.ssh.port = 22
 
     # VirtualBox provider settings
     kali.vm.provider "virtualbox" do |vb|
