@@ -29,8 +29,27 @@ if ($hostOnlyAdapter) {
 
 Write-Host
 
+# Set gateway on host-only adapter
+Write-Host "[2/5] Configuring gateway..." -NoNewline
+try {
+    # Set default gateway to 192.168.56.1 (VirtualBox host-only adapter)
+    $result = $hostOnlyAdapter.SetGateways(@("192.168.56.1"), @(1))
+    if ($result.ReturnValue -eq 0) {
+        Write-Host " Done" -ForegroundColor Green
+        Write-Host "    Gateway: 192.168.56.1" -ForegroundColor Gray
+    } else {
+        Write-Host " Warning" -ForegroundColor Yellow
+        Write-Host "    Gateway may already be set (Return code: $($result.ReturnValue))" -ForegroundColor Yellow
+    }
+} catch {
+    Write-Host " Warning" -ForegroundColor Yellow
+    Write-Host "    Could not set gateway: $($_.Exception.Message)" -ForegroundColor Yellow
+}
+
+Write-Host
+
 # Lower metric on host-only adapter to prioritize it for 192.168.56.0/24 traffic
-Write-Host "[2/4] Configuring interface metric..." -NoNewline
+Write-Host "[3/5] Configuring interface metric..." -NoNewline
 try {
     # Set low metric (5) to prioritize this interface for local network
     netsh interface ip set interface $interfaceIndex metric=5 | Out-Null
@@ -44,7 +63,7 @@ try {
 Write-Host
 
 # Verify routing table
-Write-Host "[3/4] Verifying routing table..." -NoNewline
+Write-Host "[4/5] Verifying routing table..." -NoNewline
 $route = route print | Select-String "192.168.56.0"
 if ($route) {
     Write-Host " OK" -ForegroundColor Green
@@ -57,7 +76,7 @@ if ($route) {
 Write-Host
 
 # Test connectivity to Kali
-Write-Host "[4/4] Testing connectivity to Kali (192.168.56.101)..." -NoNewline
+Write-Host "[5/5] Testing connectivity to Kali (192.168.56.101)..." -NoNewline
 if (Test-Connection 192.168.56.101 -Count 2 -Quiet) {
     Write-Host " Success" -ForegroundColor Green
 
@@ -78,6 +97,7 @@ Write-Host "===================================================" -ForegroundColo
 Write-Host
 Write-Host "Configuration Summary:" -ForegroundColor Cyan
 Write-Host "  Windows IP:  $currentIP (host-only adapter)" -ForegroundColor Gray
+Write-Host "  Gateway:     192.168.56.1" -ForegroundColor Gray
 Write-Host "  Kali IP:     192.168.56.101 (target)" -ForegroundColor Gray
 Write-Host "  Metric:      5 (prioritized for exploit traffic)" -ForegroundColor Gray
 Write-Host
