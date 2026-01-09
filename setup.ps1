@@ -387,8 +387,7 @@ if (Test-Path $pdfPath) {
         # Show file details to confirm they're real
         Get-ChildItem "..\exploits\*.pdf" -ErrorAction SilentlyContinue | ForEach-Object {
             $sizeKB = [math]::Round($_.Length / 1KB, 2)
-            $hash = (Get-FileHash $_.FullName -Algorithm MD5).Hash.Substring(0,8)
-            Write-Host "      - $($_.Name): ${sizeKB}KB (MD5: $hash)" -ForegroundColor Gray
+            Write-Host "      - $($_.Name): ${sizeKB}KB" -ForegroundColor Gray
         }
     } else {
         Write-Host "    ⚠ PDFs not persisting on host!" -ForegroundColor Red
@@ -396,6 +395,15 @@ if (Test-Path $pdfPath) {
     }
 } else {
     Write-Host "    ⚠ No PDFs found - skipping sync" -ForegroundColor Yellow
+}
+
+# Important note about antivirus
+if ($pdfCount -gt 0) {
+    Write-Host ""
+    Write-Host "  ⚠ IMPORTANT: Antivirus Detection" -ForegroundColor Yellow
+    Write-Host "  These PDFs contain exploit payloads and WILL be detected by antivirus." -ForegroundColor Gray
+    Write-Host "  If your host machine's antivirus quarantines them, add this folder to exclusions:" -ForegroundColor Gray
+    Write-Host "  $((Get-Item '..\exploits').FullName)" -ForegroundColor Cyan
 }
 
 Write-Host ""
