@@ -113,8 +113,26 @@ done
 
 echo
 
+# Create persistent configuration (ensures IP survives reboot/network restart)
+echo "[4/5] Creating persistent network configuration..."
+if [ ! -f /etc/network/interfaces.d/eth1 ]; then
+    sudo tee /etc/network/interfaces.d/eth1 > /dev/null << EOF
+# Private network interface for exploit lab
+auto eth1
+iface eth1 inet static
+    address $EXPECTED_IP
+    netmask $NETMASK
+    post-up ip route add 192.168.56.0/24 dev eth1 || true
+EOF
+    echo "  ✓ Created /etc/network/interfaces.d/eth1"
+else
+    echo "  ✓ Persistent configuration already exists"
+fi
+
+echo
+
 # Verify configuration
-echo "[4/4] Verifying network configuration..."
+echo "[5/5] Verifying network configuration..."
 echo "  Interface status:"
 ip -4 addr show eth1 | grep inet | sed 's/^/    /'
 
