@@ -18,9 +18,11 @@ cd /vagrant/exploits/lnk
 ```
 
 This automatically:
-- Starts HTTP server on port 8080
+- Checks HTTP server (already running on port 8080)
 - Starts Metasploit handler on port 4444
 - Displays delivery instructions
+
+**Note:** HTTP server starts automatically when Kali boots!
 
 ### Step 2: Deliver the fake PDF to Windows
 

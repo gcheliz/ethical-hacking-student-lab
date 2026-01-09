@@ -56,7 +56,8 @@ cd ethical-hacking-student-lab
 cd vagrant
 vagrant ssh kali
 
-# 2. Start the attack (HTTP server + Metasploit listener)
+# 2. Start the attack (Metasploit listener)
+# Note: HTTP server runs automatically on boot
 cd /vagrant/exploits/lnk
 ./start_lnk_attack.sh
 
@@ -105,7 +106,7 @@ cd /vagrant/exploits/lnk
 
 - Malicious LNK file (fake PDF shortcut)
 - PowerShell Meterpreter payload
-- HTTP server for payload delivery
+- HTTP server for payload delivery (auto-starts on boot)
 - Automated attack script
 - One-click attack automation
 

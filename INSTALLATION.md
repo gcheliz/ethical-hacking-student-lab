@@ -244,6 +244,7 @@ cd ethical-hacking-student-lab
   - Installs Metasploit and tools
   - Generates PowerShell payload
   - Generates malicious LNK file
+  - Sets up HTTP server (auto-starts on boot)
 
 [5/7] Building Windows Server 2008 R2 VM (20-30 minutes)
   - Downloads Windows box (~5 GB)

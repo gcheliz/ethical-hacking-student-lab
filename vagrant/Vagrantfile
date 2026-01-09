@@ -86,6 +86,11 @@ Vagrant.configure("2") do |config|
       path: "provisioning/kali/create_lnk_exploit.sh",
       privileged: false,  # Run as vagrant user
       name: "Generate LNK exploit (fake PDF)"
+
+    # Provisioning - Setup HTTP server autostart
+    kali.vm.provision "shell",
+      path: "provisioning/kali/setup_http_autostart.sh",
+      name: "Setup HTTP server autostart"
   end
 
   # =========================================================================
