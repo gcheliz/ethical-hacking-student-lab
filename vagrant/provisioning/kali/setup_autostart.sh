@@ -18,7 +18,10 @@ Requires=network.target
 Type=simple
 User=vagrant
 WorkingDirectory=/home/vagrant/.msf4/local
-ExecStart=/usr/bin/python3 -m http.server 8080
+# Wait for the interface to have IP 192.168.56.101 before starting
+ExecStartPre=/bin/bash -c 'for i in {1..30}; do ip addr show | grep -q "192.168.56.101" && exit 0; sleep 1; done; exit 1'
+# Explicitly bind to 192.168.56.101 (host-only network)
+ExecStart=/usr/bin/python3 -m http.server 8080 --bind 192.168.56.101
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal

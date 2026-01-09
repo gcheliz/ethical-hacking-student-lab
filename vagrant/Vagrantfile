@@ -36,11 +36,10 @@ Vagrant.configure("2") do |config|
     # Network - host-only network for VM-to-VM communication
     # NAT adapter (eth0/adapter 1) is added automatically by Vagrant for management
     # Host-only adapter (eth1/adapter 2) is for exploit traffic
+    # Note: auto_config disabled, we configure manually in provisioning for better control
     kali.vm.network "private_network",
       ip: "192.168.56.101",
-      netmask: "255.255.255.0",
-      gateway: "192.168.56.1",
-      auto_config: true,
+      auto_config: false,
       virtualbox__intnet: false  # Use host-only adapter, not internal network
 
     # Optional: Use host-only network for SSH instead of NAT
@@ -72,6 +71,11 @@ Vagrant.configure("2") do |config|
     kali.vm.synced_folder "../docs", "/vagrant/docs",
       mount_options: ["ro"]
 
+    # Provisioning - Configure network FIRST (before anything else)
+    kali.vm.provision "shell",
+      path: "provisioning/kali/configure_network_early.sh",
+      name: "Configure host-only network"
+
     # Provisioning - Install tools
     kali.vm.provision "shell",
       path: "provisioning/kali/install_tools.sh",
@@ -87,6 +91,11 @@ Vagrant.configure("2") do |config|
     kali.vm.provision "shell",
       path: "provisioning/kali/setup_autostart.sh",
       name: "Setup automatic PDF HTTP server"
+
+    # Provisioning - Verify HTTP server is working
+    kali.vm.provision "shell",
+      path: "provisioning/kali/verify_http_server.sh",
+      name: "Verify HTTP server status"
   end
 
   # =========================================================================
@@ -155,7 +164,13 @@ Vagrant.configure("2") do |config|
       privileged: true,
       name: "Create desktop shortcuts"
 
-    # Provisioning Step 4: Setup PDF download script
+    # Provisioning Step 4: Test connectivity to Kali
+    win.vm.provision "shell",
+      path: "provisioning/windows/test_kali_connectivity.ps1",
+      privileged: true,
+      name: "Test network connectivity to Kali"
+
+    # Provisioning Step 5: Setup PDF download script
     win.vm.provision "shell",
       path: "provisioning/windows/setup_pdf_download.ps1",
       privileged: true,
