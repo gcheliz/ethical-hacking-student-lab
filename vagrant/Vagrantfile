@@ -71,15 +71,10 @@ Vagrant.configure("2") do |config|
       path: "provisioning/kali/install_tools.sh",
       name: "Install Metasploit and tools"
 
-    # Provisioning - Fix network interface (ensure eth1 is up)
+    # Provisioning - Configure persistent network for eth1
     kali.vm.provision "shell",
       path: "provisioning/kali/fix_network.sh",
-      name: "Fix network interface eth1"
-
-    # Provisioning - Configure network
-    kali.vm.provision "shell",
-      path: "provisioning/kali/configure_network.sh",
-      name: "Configure static IP"
+      name: "Configure persistent static IP for eth1"
 
     # Provisioning - Generate exploit PDFs
     kali.vm.provision "shell",
