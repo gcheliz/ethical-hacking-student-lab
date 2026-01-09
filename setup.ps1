@@ -252,28 +252,56 @@ if (-not $NETWORK_NAME) {
     } else {
         # No adapters exist, create one
         Write-Host "  Creating new host-only network..."
-        $output = & $vboxManage hostonlyif create 2>&1
+        $createOutput = & $vboxManage hostonlyif create 2>&1 | Out-String
 
-        # Parse the output to get the adapter name
-        if ($output -match "Interface '(.+)' was successfully created") {
-            $NETWORK_NAME = $Matches[1]
-        } else {
-            # Fallback: get the newest adapter
-            $networkList = & $vboxManage list hostonlyifs
-            $lines = $networkList -split "`n"
-            foreach ($line in $lines) {
-                if ($line -match "^Name:\s+(.+)") {
-                    $NETWORK_NAME = $Matches[1].Trim()
-                    break
-                }
+        # After creation, refresh the list and get the adapter name
+        Start-Sleep -Seconds 1
+        $networkList = & $vboxManage list hostonlyifs
+        $lines = $networkList -split "`n"
+        foreach ($line in $lines) {
+            if ($line -match "^Name:\s+(.+)") {
+                $NETWORK_NAME = $Matches[1].Trim()
+                Write-Host "  Created network: $NETWORK_NAME"
+                break
             }
         }
-        Write-Host "  Created network: $NETWORK_NAME"
+
+        if (-not $NETWORK_NAME) {
+            Write-Error-Message "Failed to create or detect network adapter"
+            Write-Host "Create output: $createOutput" -ForegroundColor Yellow
+            exit 1
+        }
     }
 
     # Configure the network with correct IP
-    Write-Host "  Configuring IP: 192.168.56.1/24..."
-    & $vboxManage hostonlyif ipconfig $NETWORK_NAME --ip 192.168.56.1 --netmask 255.255.255.0 | Out-Null
+    Write-Host "  Configuring IP: 192.168.56.1/24 on adapter: $NETWORK_NAME"
+
+    # Use proper quoting for adapter names with spaces
+    $ipConfigArgs = @("hostonlyif", "ipconfig", $NETWORK_NAME, "--ip", "192.168.56.1", "--netmask", "255.255.255.0")
+    $configOutput = & $vboxManage $ipConfigArgs 2>&1
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  Configuration failed. Output: $configOutput" -ForegroundColor Red
+        Write-Host "  Retrying with alternative method..." -ForegroundColor Yellow
+
+        # Retry without netmask first
+        Start-Sleep -Seconds 2
+        $ipConfigArgs2 = @("hostonlyif", "ipconfig", $NETWORK_NAME, "--ip", "192.168.56.1")
+        $configOutput2 = & $vboxManage $ipConfigArgs2 2>&1
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error-Message "Cannot configure adapter IP address"
+            Write-Host ""
+            Write-Host "Please manually configure the adapter:" -ForegroundColor Yellow
+            Write-Host "  VBoxManage hostonlyif ipconfig `"$NETWORK_NAME`" --ip 192.168.56.1 --netmask 255.255.255.0" -ForegroundColor Cyan
+            Write-Host ""
+            Write-Host "Or use VirtualBox GUI:" -ForegroundColor Yellow
+            Write-Host "  File → Host Network Manager → Select adapter → Configure manually" -ForegroundColor Cyan
+            Write-Host "  IPv4 Address: 192.168.56.1" -ForegroundColor Cyan
+            Write-Host "  IPv4 Network Mask: 255.255.255.0" -ForegroundColor Cyan
+            exit 1
+        }
+    }
 }
 
 # Disable DHCP server (static IPs only)
