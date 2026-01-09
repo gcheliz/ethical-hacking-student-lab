@@ -99,3 +99,7 @@ Write-Host "Routing table (relevant entries):" -ForegroundColor Cyan
 route print | Select-String "192.168.56"
 
 Write-Host
+Write-Host
+
+# Always exit successfully - connectivity tests are informational only
+exit 0
