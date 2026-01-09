@@ -13,7 +13,7 @@ echo
 
 # Configuration
 HTTP_PORT="8080"
-EXPLOIT_DIR="/vagrant/exploits/lnk"
+EXPLOIT_DIR="/home/vagrant/exploits/lnk"  # Non-shared directory
 SERVICE_NAME="lnk-http-server"
 
 # ============================================================================
