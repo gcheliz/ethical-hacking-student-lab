@@ -45,11 +45,23 @@ try {
 }
 
 # 5. Disable IE Enhanced Security Configuration (common on Server 2008 R2)
-Write-Host "[5/5] Disabling IE Enhanced Security..." -NoNewline
+Write-Host "[5/6] Disabling IE Enhanced Security..." -NoNewline
 try {
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components\{A509B1A7-37EF-4b3f-8CFC-4F3A74704073}" -Name IsInstalled -Value 0 -Force -ErrorAction SilentlyContinue
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components\{A509B1A8-37EF-4b3f-8CFC-4F3A74704073}" -Name IsInstalled -Value 0 -Force -ErrorAction SilentlyContinue
     Write-Host " Done" -ForegroundColor Green
+} catch {
+    Write-Host " Warning: $($_.Exception.Message)" -ForegroundColor Yellow
+}
+
+# 6. Disable DEP (Data Execution Prevention) - CRITICAL for exploit to work
+Write-Host "[6/6] Disabling DEP (Data Execution Prevention)..." -NoNewline
+try {
+    # Disable DEP for all programs except Windows components
+    # 0 = AlwaysOff (disable for everything - most permissive for exploits)
+    bcdedit /set nx AlwaysOff | Out-Null
+    Write-Host " Done" -ForegroundColor Green
+    Write-Host "    DEP will be disabled on next reboot" -ForegroundColor Gray
 } catch {
     Write-Host " Warning: $($_.Exception.Message)" -ForegroundColor Yellow
 }
