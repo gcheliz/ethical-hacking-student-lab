@@ -89,27 +89,24 @@ echo -e "${CYAN}  Payload will be generated automatically by Kali VM${NC}"
 echo
 
 # ============================================================================
-# STEP 3: Configure VirtualBox Network
+# STEP 3: Configure VirtualBox NAT Network
 # ============================================================================
-echo -e "${YELLOW}[3/7] Configuring VirtualBox network...${NC}"
+echo -e "${YELLOW}[3/7] Configuring VirtualBox NAT Network...${NC}"
 
-# Check if host-only network exists
-if ! VBoxManage list hostonlyifs | grep -q "vboxnet0"; then
-    echo "  Creating host-only network..."
-    VBoxManage hostonlyif create
-    # Get the actual name (might be vboxnet0, vboxnet1, etc.)
-    NETWORK_NAME=$(VBoxManage list hostonlyifs | grep "^Name" | head -1 | awk '{print $2}')
+# Run the NAT Network creation script
+if [ -f "vagrant/create_nat_network.sh" ]; then
+    bash vagrant/create_nat_network.sh
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}✗ Failed to create NAT Network${NC}"
+        exit 1
+    fi
+else
+    echo -e "${RED}✗ NAT Network setup script not found${NC}"
+    exit 1
 fi
 
-# Configure network with correct IP range
-VBoxManage hostonlyif ipconfig "$NETWORK_NAME" --ip 192.168.56.1 --netmask 255.255.255.0
-
-# Disable DHCP (we use static IPs)
-VBoxManage dhcpserver modify --ifname "$NETWORK_NAME" --disable 2>/dev/null || \
-VBoxManage dhcpserver add --ifname "$NETWORK_NAME" --ip 192.168.56.1 --netmask 255.255.255.0 --lowerip 192.168.56.100 --upperip 192.168.56.200 --disable
-
-echo -e "${GREEN}  ✓ Network configured: 192.168.56.0/24${NC}"
-echo -e "${GREEN}  ✓ Network interface: $NETWORK_NAME${NC}"
+echo -e "${GREEN}  ✓ NAT Network configured: 192.168.56.0/24${NC}"
+echo -e "${GREEN}  ✓ Network name: LNK_Exploit_Lab_Network${NC}"
 echo
 
 # ============================================================================
@@ -272,9 +269,9 @@ echo -e "    Exploitation:    Automated EXE payload"
 echo -e "    Security:        ALL DISABLED (intentionally vulnerable)"
 echo
 echo -e "${CYAN}Network:${NC}"
-echo -e "  ${GREEN}✓${NC} Host-Only Network:  192.168.56.0/24"
-echo -e "  ${GREEN}✓${NC} Connectivity:       Verified"
-echo -e "  ${GREEN}✓${NC} Isolation:          Complete (no internet from VMs)"
+echo -e "  ${GREEN}✓${NC} NAT Network:        192.168.56.0/24 (LNK_Exploit_Lab_Network)"
+echo -e "  ${GREEN}✓${NC} Connectivity:       Verified (VM-to-VM + Internet)"
+echo -e "  ${GREEN}✓${NC} Configuration:      Single adapter per VM"
 echo
 echo -e "${CYAN}Exploit Materials:${NC}"
 echo -e "  ${GREEN}✓${NC} Payload:            update_checker.exe"

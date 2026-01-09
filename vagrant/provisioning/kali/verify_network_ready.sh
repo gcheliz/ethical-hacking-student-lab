@@ -1,7 +1,8 @@
 #!/bin/bash
 ################################################################################
 # Network Readiness Check
-# Waits for network adapters to be fully configured before proceeding
+# Waits for network adapter to be fully configured before proceeding
+# NOTE: With NAT Network, we use eth0 (single adapter)
 ################################################################################
 
 set -e
@@ -11,6 +12,7 @@ MAX_WAIT=30
 WAIT_COUNT=0
 REQUIRED_IP="192.168.56.101"
 GATEWAY="192.168.56.1"
+IFACE="eth0"  # Single NAT Network adapter
 
 echo "================================"
 echo "Verifying Network Readiness"
@@ -19,13 +21,13 @@ echo ""
 
 # Function to check if network is ready
 check_network() {
-    # Check if eth1 exists
-    if ! ip link show eth1 &> /dev/null; then
+    # Check if interface exists
+    if ! ip link show $IFACE &> /dev/null; then
         return 1
     fi
 
-    # Check if eth1 has the correct IP
-    if ! ip addr show eth1 | grep -q "$REQUIRED_IP"; then
+    # Check if interface has the correct IP
+    if ! ip addr show $IFACE | grep -q "$REQUIRED_IP"; then
         return 1
     fi
 
@@ -38,6 +40,7 @@ check_network() {
 }
 
 echo "Waiting for network to be ready..."
+echo "  Interface: $IFACE (NAT Network)"
 echo "  Required IP: $REQUIRED_IP"
 echo "  Gateway: $GATEWAY"
 echo ""
@@ -51,7 +54,7 @@ while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
 
         # Show network configuration
         echo "Network Configuration:"
-        ip addr show eth1 | grep -E "eth1|inet " | sed 's/^/  /'
+        ip addr show $IFACE | grep -E "$IFACE|inet " | sed 's/^/  /'
         echo ""
 
         echo "Routing:"
@@ -73,7 +76,7 @@ echo ""
 echo "Current network state:"
 ip addr show | sed 's/^/  /'
 echo ""
-echo "Continuing anyway (services may need manual start)..."
+echo "Continuing anyway (will configure static IP next)..."
 echo ""
 
 exit 0  # Don't fail provisioning, just warn

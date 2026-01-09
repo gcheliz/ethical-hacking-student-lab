@@ -130,133 +130,49 @@ Write-Host "  Payload will be generated automatically by Kali VM" -ForegroundCol
 
 Write-Host ""
 
-# STEP 3: Configure VirtualBox Network
-Write-Step "[3/7] Configuring VirtualBox network..."
+# STEP 3: Configure VirtualBox NAT Network
+Write-Step "[3/7] Configuring VirtualBox NAT Network..."
 Write-Host ""
 
-# Check if host-only network with correct IP exists
 $vboxManage = "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe"
-$networkList = & $vboxManage list hostonlyifs 2>$null
 
-# Parse all host-only adapters to find one with 192.168.56.1
-$NETWORK_NAME = $null
-$currentAdapter = $null
-$adapterName = $null
+# Check if NAT Network already exists
+$natNetworkName = "LNK_Exploit_Lab_Network"
+$natNetworks = & $vboxManage natnetwork list 2>$null
 
-if ($networkList) {
-    $lines = $networkList -split "`n"
-    foreach ($line in $lines) {
-        if ($line -match "^Name:\s+(.+)") {
-            $adapterName = $Matches[1].Trim()
-        }
-        if ($line -match "^IPAddress:\s+192\.168\.56\.1") {
-            $NETWORK_NAME = $adapterName
-            Write-Host "  Found existing network with correct IP: $NETWORK_NAME"
-            break
-        }
-    }
-}
+if ($natNetworks -and ($natNetworks -match $natNetworkName)) {
+    Write-Host "  NAT Network '$natNetworkName' already exists" -ForegroundColor Cyan
+    Write-Success "Using existing NAT Network"
+} else {
+    Write-Host "  Creating NAT Network..." -ForegroundColor Cyan
+    Write-Host "  Name: $natNetworkName" -ForegroundColor Cyan
+    Write-Host "  Network: 192.168.56.0/24" -ForegroundColor Cyan
+    Write-Host "  DHCP: Disabled (using static IPs)" -ForegroundColor Cyan
+    Write-Host ""
 
-# If no network with correct IP exists, find first adapter or create one
-if (-not $NETWORK_NAME) {
-    if ($networkList) {
-        # Use first adapter and reconfigure it
-        $lines = $networkList -split "`n"
-        foreach ($line in $lines) {
-            if ($line -match "^Name:\s+(.+)") {
-                $NETWORK_NAME = $Matches[1].Trim()
-                Write-Host "  Reconfiguring existing network: $NETWORK_NAME"
-                break
-            }
-        }
-    } else {
-        # No adapters exist, create one
-        Write-Host "  Creating new host-only network..."
-        $createOutput = & $vboxManage hostonlyif create 2>&1 | Out-String
-
-        # After creation, refresh the list and get the adapter name
-        Start-Sleep -Seconds 1
-        $networkList = & $vboxManage list hostonlyifs
-        $lines = $networkList -split "`n"
-        foreach ($line in $lines) {
-            if ($line -match "^Name:\s+(.+)") {
-                $NETWORK_NAME = $Matches[1].Trim()
-                Write-Host "  Created network: $NETWORK_NAME"
-                break
-            }
-        }
-
-        if (-not $NETWORK_NAME) {
-            Write-Error-Message "Failed to create or detect network adapter"
-            Write-Host "Create output: $createOutput" -ForegroundColor Yellow
-            exit 1
-        }
-    }
-
-    # Configure the network with correct IP
-    Write-Host "  Configuring IP: 192.168.56.1/24 on adapter: $NETWORK_NAME"
-
-    # Use proper quoting for adapter names with spaces
-    $ipConfigArgs = @("hostonlyif", "ipconfig", $NETWORK_NAME, "--ip", "192.168.56.1", "--netmask", "255.255.255.0")
-    $configOutput = & $vboxManage $ipConfigArgs 2>&1
+    # Create NAT Network
+    $createArgs = @("natnetwork", "add", "--netname", $natNetworkName, "--network", "192.168.56.0/24", "--enable", "--dhcp", "off")
+    $createOutput = & $vboxManage $createArgs 2>&1
 
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "  Configuration failed. Output: $configOutput" -ForegroundColor Red
-        Write-Host "  Retrying with alternative method..." -ForegroundColor Yellow
-
-        # Retry without netmask first
-        Start-Sleep -Seconds 2
-        $ipConfigArgs2 = @("hostonlyif", "ipconfig", $NETWORK_NAME, "--ip", "192.168.56.1")
-        $configOutput2 = & $vboxManage $ipConfigArgs2 2>&1
-
-        if ($LASTEXITCODE -ne 0) {
-            Write-Error-Message "Cannot configure adapter IP address"
-            Write-Host ""
-            Write-Host "Please manually configure the adapter:" -ForegroundColor Yellow
-            Write-Host "  VBoxManage hostonlyif ipconfig `"$NETWORK_NAME`" --ip 192.168.56.1 --netmask 255.255.255.0" -ForegroundColor Cyan
-            Write-Host ""
-            Write-Host "Or use VirtualBox GUI:" -ForegroundColor Yellow
-            Write-Host "  File → Host Network Manager → Select adapter → Configure manually" -ForegroundColor Cyan
-            Write-Host "  IPv4 Address: 192.168.56.1" -ForegroundColor Cyan
-            Write-Host "  IPv4 Network Mask: 255.255.255.0" -ForegroundColor Cyan
-            exit 1
-        }
+        Write-Error-Message "Failed to create NAT Network"
+        Write-Host "Output: $createOutput" -ForegroundColor Red
+        exit 1
     }
+
+    Write-Success "NAT Network created successfully"
 }
 
-# Disable DHCP server (static IPs only)
-try {
-    & $vboxManage dhcpserver modify --ifname $NETWORK_NAME --disable 2>$null | Out-Null
-} catch {
-    & $vboxManage dhcpserver add --ifname $NETWORK_NAME --ip 192.168.56.1 --netmask 255.255.255.0 --lowerip 192.168.56.100 --upperip 192.168.56.200 --disable 2>$null | Out-Null
-}
-
-# Verify configuration
-$verifyList = & $vboxManage list hostonlyifs
-$verified = $false
-$lines = $verifyList -split "`n"
-$checkingName = $false
-foreach ($line in $lines) {
-    if ($line -match "^Name:\s+$([regex]::Escape($NETWORK_NAME))") {
-        $checkingName = $true
-    }
-    if ($checkingName -and $line -match "^IPAddress:\s+192\.168\.56\.1") {
-        $verified = $true
-        break
-    }
-    if ($line -match "^Name:\s+" -and -not ($line -match "^Name:\s+$([regex]::Escape($NETWORK_NAME))")) {
-        $checkingName = $false
-    }
-}
-
-if ($verified) {
-    Write-Success "Network configured: 192.168.56.0/24"
-    Write-Success "Network interface: $NETWORK_NAME"
+# Verify NAT Network configuration
+$verifyNetworks = & $vboxManage natnetwork list 2>$null
+if ($verifyNetworks -and ($verifyNetworks -match $natNetworkName)) {
+    Write-Success "NAT Network configured: 192.168.56.0/24"
+    Write-Success "Network name: $natNetworkName"
 } else {
-    Write-Error-Message "Failed to configure network with IP 192.168.56.1"
+    Write-Error-Message "Failed to verify NAT Network"
     Write-Host ""
-    Write-Host "Current network configuration:" -ForegroundColor Yellow
-    & $vboxManage list hostonlyifs
+    Write-Host "Current NAT networks:" -ForegroundColor Yellow
+    & $vboxManage natnetwork list
     exit 1
 }
 Write-Host ""
@@ -510,9 +426,9 @@ Write-Host "    Exploitation:    Automated LNK payload"
 Write-Host "    Security:        ALL DISABLED (intentionally vulnerable)"
 Write-Host ""
 Write-Host "Network:" -ForegroundColor Cyan
-Write-Host "  [OK] Host-Only Network:  192.168.56.0/24" -ForegroundColor Green
-Write-Host "  [OK] Connectivity:       Verified" -ForegroundColor Green
-Write-Host "  [OK] Isolation:          Complete (no internet from VMs)" -ForegroundColor Green
+Write-Host "  [OK] NAT Network:        192.168.56.0/24 (LNK_Exploit_Lab_Network)" -ForegroundColor Green
+Write-Host "  [OK] Connectivity:       Verified (VM-to-VM + Internet)" -ForegroundColor Green
+Write-Host "  [OK] Configuration:      Single adapter per VM" -ForegroundColor Green
 Write-Host ""
 Write-Host "Exploit Materials:" -ForegroundColor Cyan
 Write-Host "  [OK] Payload:            shell.ps1 (PowerShell Meterpreter)" -ForegroundColor Green
