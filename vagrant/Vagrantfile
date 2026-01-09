@@ -141,19 +141,25 @@ Vagrant.configure("2") do |config|
       owner: "vagrant",
       group: "vagrant"
 
-    # Provisioning Step 1: Disable ALL security
+    # Provisioning Step 1: Verify/Configure Host-Only network
+    win.vm.provision "shell",
+      path: "provisioning/windows/configure_hostonly_network.ps1",
+      privileged: true,
+      name: "Verify Host-Only network configuration"
+
+    # Provisioning Step 2: Disable ALL security
     win.vm.provision "shell",
       path: "provisioning/windows/disable_security.ps1",
       privileged: true,
       name: "Disable Windows security features"
 
-    # Provisioning Step 2: Create desktop shortcuts
+    # Provisioning Step 3: Create desktop shortcuts
     win.vm.provision "shell",
       path: "provisioning/windows/create_shortcuts.ps1",
       privileged: true,
       name: "Create desktop shortcuts"
 
-    # Provisioning Step 3: Test connectivity to Kali
+    # Provisioning Step 4: Test connectivity to Kali
     win.vm.provision "shell",
       path: "provisioning/windows/test_kali_connectivity.ps1",
       privileged: true,
