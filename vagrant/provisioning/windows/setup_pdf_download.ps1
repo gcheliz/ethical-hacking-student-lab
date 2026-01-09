@@ -177,6 +177,6 @@ Write-Host "===================================================" -ForegroundColo
 Write-Host
 Write-Host "After reboot, you can:" -ForegroundColor Cyan
 Write-Host "  1. Double-click 'Download Malicious PDFs' on Desktop" -ForegroundColor Gray
-Write-Host "  2. PDFs will be downloaded from Kali ($KALI_IP:$HTTP_PORT)" -ForegroundColor Gray
+Write-Host "  2. PDFs will be downloaded from Kali (${KALI_IP}:${HTTP_PORT})" -ForegroundColor Gray
 Write-Host "  3. This validates network connectivity automatically" -ForegroundColor Gray
 Write-Host
