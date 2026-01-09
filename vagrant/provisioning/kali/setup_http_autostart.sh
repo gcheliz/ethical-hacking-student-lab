@@ -13,7 +13,7 @@ echo
 
 # Configuration
 HTTP_PORT="8080"
-EXPLOIT_DIR="/home/vagrant/exploits/lnk"  # Non-shared directory
+PAYLOAD_DIR="/home/vagrant/lnk_payloads"  # Non-shared directory for generated files
 SERVICE_NAME="lnk-http-server"
 
 # ============================================================================
@@ -24,17 +24,15 @@ echo "[1/3] Creating systemd service..."
 sudo tee /etc/systemd/system/${SERVICE_NAME}.service > /dev/null << EOF
 [Unit]
 Description=LNK Exploit HTTP Server
-After=network-online.target vagrant.mount
-Wants=network-online.target
-Requires=vagrant.mount
+After=network-online.target
 
 [Service]
 Type=simple
 User=vagrant
 Group=vagrant
-WorkingDirectory=${EXPLOIT_DIR}
+WorkingDirectory=${PAYLOAD_DIR}
 ExecStartPre=/bin/sleep 5
-ExecStartPre=/bin/bash -c 'timeout 30 bash -c "until [ -f ${EXPLOIT_DIR}/shell.ps1 ]; do sleep 1; done"'
+ExecStartPre=/bin/bash -c 'timeout 30 bash -c "until [ -f ${PAYLOAD_DIR}/shell.ps1 ]; do sleep 1; done"'
 ExecStart=/usr/bin/python3 -m http.server ${HTTP_PORT}
 Restart=always
 RestartSec=10
