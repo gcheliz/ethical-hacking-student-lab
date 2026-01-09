@@ -36,10 +36,10 @@ Vagrant.configure("2") do |config|
     # Network - host-only network for VM-to-VM communication
     # NAT adapter (eth0/adapter 1) is added automatically by Vagrant for management
     # Host-only adapter (eth1/adapter 2) is for exploit traffic
-    # Note: auto_config disabled, we configure manually in provisioning for better control
     kali.vm.network "private_network",
       ip: "192.168.56.101",
-      auto_config: false,
+      netmask: "255.255.255.0",
+      auto_config: true,  # Auto-configure for reliability
       virtualbox__intnet: false  # Use host-only adapter, not internal network
 
     # Optional: Use host-only network for SSH instead of NAT
@@ -71,10 +71,15 @@ Vagrant.configure("2") do |config|
     kali.vm.synced_folder "../docs", "/vagrant/docs",
       mount_options: ["ro"]
 
-    # Provisioning - Configure network FIRST (before anything else)
+    # Provisioning - Verify network is ready FIRST
+    kali.vm.provision "shell",
+      path: "provisioning/kali/verify_network_ready.sh",
+      name: "Verify network is ready"
+
+    # Provisioning - Configure network (fallback if auto-config fails)
     kali.vm.provision "shell",
       path: "provisioning/kali/configure_network_early.sh",
-      name: "Configure host-only network"
+      name: "Configure host-only network (if needed)"
 
     # Provisioning - Install tools
     kali.vm.provision "shell",
