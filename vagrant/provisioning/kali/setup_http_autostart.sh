@@ -25,13 +25,16 @@ sudo tee /etc/systemd/system/${SERVICE_NAME}.service > /dev/null << EOF
 [Unit]
 Description=LNK Exploit HTTP Server
 After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 User=vagrant
 Group=vagrant
 WorkingDirectory=${PAYLOAD_DIR}
-ExecStartPre=/bin/sleep 5
+# Wait for Host-Only network interface to have IP 192.168.56.101
+ExecStartPre=/bin/bash -c 'timeout 60 bash -c "until ip addr show eth1 | grep -q 192.168.56.101; do sleep 2; done"'
+# Wait for payload file to exist
 ExecStartPre=/bin/bash -c 'timeout 30 bash -c "until [ -f ${PAYLOAD_DIR}/shell.ps1 ]; do sleep 1; done"'
 ExecStart=/usr/bin/python3 -m http.server ${HTTP_PORT} --bind 192.168.56.101
 Restart=always
