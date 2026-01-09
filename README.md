@@ -61,8 +61,8 @@ vagrant ssh kali
 cd /vagrant/exploits/lnk
 ./start_lnk_attack.sh
 
-# 3. Deliver the fake PDF to Windows victim
-# 4. Victim clicks the "PDF"
+# 3. On Windows VM, double-click: "Download_Fake_PDF_from_Kali"
+# 4. When downloaded, double-click the "PDF" file
 # 5. Get Meterpreter shell!
 ```
 

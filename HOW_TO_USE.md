@@ -26,12 +26,18 @@ This automatically:
 
 ### Step 2: Deliver the fake PDF to Windows
 
-**Method A: Manual Placement (Easiest)**
+**Method A: Desktop Shortcut (Easiest)** ⭐ **RECOMMENDED**
+1. In Windows VM, look at the desktop
+2. Double-click: `Download_Fake_PDF_from_Kali`
+3. This downloads the LNK file from Kali HTTP server automatically
+4. When download completes, double-click `Q4_Financial_Report.pdf`
+
+**Method B: Manual Placement**
 1. In Windows VM, navigate to: `C:\vagrant\exploits\lnk\`
 2. Copy `Q4_Financial_Report.pdf.lnk` to Desktop
 3. Double-click the "PDF" file
 
-**Method B: HTTP Download (Realistic)**
+**Method C: HTTP Download (Most Realistic)**
 1. In Windows VM, open browser
 2. Go to: `http://192.168.56.101:8080/`
 3. Download `Q4_Financial_Report.pdf.lnk`
