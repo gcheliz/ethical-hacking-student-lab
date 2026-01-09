@@ -159,6 +159,11 @@ Vagrant.configure("2") do |config|
       path: "provisioning/windows/copy_pdfs_to_desktop.ps1",
       name: "Copy malicious PDFs to Desktop"
 
+    # Provisioning Step 6: Validate network configuration
+    win.vm.provision "shell",
+      path: "provisioning/windows/validate_network.ps1",
+      name: "Validate network configuration"
+
     # Final Step: Reboot to apply all settings
     win.vm.provision "shell",
       inline: "shutdown /r /t 30 /c 'Rebooting to apply all settings. VM will restart in 30 seconds.'",
