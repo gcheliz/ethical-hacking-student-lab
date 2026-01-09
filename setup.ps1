@@ -214,30 +214,103 @@ Write-Host ""
 Write-Step "[3/9] Configuring VirtualBox network..."
 Write-Host ""
 
-# Check if host-only network exists
+# Check if host-only network with correct IP exists
 $vboxManage = "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe"
-$networks = & $vboxManage list hostonlyifs 2>$null
+$networkList = & $vboxManage list hostonlyifs 2>$null
 
-if ($networks -notmatch "vboxnet0") {
-    Write-Host "  Creating host-only network..."
-    & $vboxManage hostonlyif create | Out-Null
-    # Get the actual name
-    $networkList = & $vboxManage list hostonlyifs
-    $NETWORK_NAME = ($networkList | Select-String "Name:\s+(.+)" | Select-Object -First 1).Matches.Groups[1].Value.Trim()
+# Parse all host-only adapters to find one with 192.168.56.1
+$NETWORK_NAME = $null
+$currentAdapter = $null
+$adapterName = $null
+
+if ($networkList) {
+    $lines = $networkList -split "`n"
+    foreach ($line in $lines) {
+        if ($line -match "^Name:\s+(.+)") {
+            $adapterName = $Matches[1].Trim()
+        }
+        if ($line -match "^IPAddress:\s+192\.168\.56\.1") {
+            $NETWORK_NAME = $adapterName
+            Write-Host "  Found existing network with correct IP: $NETWORK_NAME"
+            break
+        }
+    }
 }
 
-# Configure network
-& $vboxManage hostonlyif ipconfig $NETWORK_NAME --ip 192.168.56.1 --netmask 255.255.255.0 | Out-Null
+# If no network with correct IP exists, find first adapter or create one
+if (-not $NETWORK_NAME) {
+    if ($networkList) {
+        # Use first adapter and reconfigure it
+        $lines = $networkList -split "`n"
+        foreach ($line in $lines) {
+            if ($line -match "^Name:\s+(.+)") {
+                $NETWORK_NAME = $Matches[1].Trim()
+                Write-Host "  Reconfiguring existing network: $NETWORK_NAME"
+                break
+            }
+        }
+    } else {
+        # No adapters exist, create one
+        Write-Host "  Creating new host-only network..."
+        $output = & $vboxManage hostonlyif create 2>&1
 
-# Disable DHCP
+        # Parse the output to get the adapter name
+        if ($output -match "Interface '(.+)' was successfully created") {
+            $NETWORK_NAME = $Matches[1]
+        } else {
+            # Fallback: get the newest adapter
+            $networkList = & $vboxManage list hostonlyifs
+            $lines = $networkList -split "`n"
+            foreach ($line in $lines) {
+                if ($line -match "^Name:\s+(.+)") {
+                    $NETWORK_NAME = $Matches[1].Trim()
+                    break
+                }
+            }
+        }
+        Write-Host "  Created network: $NETWORK_NAME"
+    }
+
+    # Configure the network with correct IP
+    Write-Host "  Configuring IP: 192.168.56.1/24..."
+    & $vboxManage hostonlyif ipconfig $NETWORK_NAME --ip 192.168.56.1 --netmask 255.255.255.0 | Out-Null
+}
+
+# Disable DHCP server (static IPs only)
 try {
-    & $vboxManage dhcpserver modify --ifname $NETWORK_NAME --disable 2>$null
+    & $vboxManage dhcpserver modify --ifname $NETWORK_NAME --disable 2>$null | Out-Null
 } catch {
-    & $vboxManage dhcpserver add --ifname $NETWORK_NAME --ip 192.168.56.1 --netmask 255.255.255.0 --lowerip 192.168.56.100 --upperip 192.168.56.200 --disable 2>$null
+    & $vboxManage dhcpserver add --ifname $NETWORK_NAME --ip 192.168.56.1 --netmask 255.255.255.0 --lowerip 192.168.56.100 --upperip 192.168.56.200 --disable 2>$null | Out-Null
 }
 
-Write-Success "Network configured: 192.168.56.0/24"
-Write-Success "Network interface: $NETWORK_NAME"
+# Verify configuration
+$verifyList = & $vboxManage list hostonlyifs
+$verified = $false
+$lines = $verifyList -split "`n"
+$checkingName = $false
+foreach ($line in $lines) {
+    if ($line -match "^Name:\s+$([regex]::Escape($NETWORK_NAME))") {
+        $checkingName = $true
+    }
+    if ($checkingName -and $line -match "^IPAddress:\s+192\.168\.56\.1") {
+        $verified = $true
+        break
+    }
+    if ($line -match "^Name:\s+" -and -not ($line -match "^Name:\s+$([regex]::Escape($NETWORK_NAME))")) {
+        $checkingName = $false
+    }
+}
+
+if ($verified) {
+    Write-Success "Network configured: 192.168.56.0/24"
+    Write-Success "Network interface: $NETWORK_NAME"
+} else {
+    Write-Error-Message "Failed to configure network with IP 192.168.56.1"
+    Write-Host ""
+    Write-Host "Current network configuration:" -ForegroundColor Yellow
+    & $vboxManage list hostonlyifs
+    exit 1
+}
 Write-Host ""
 
 # STEP 4: Build Kali Linux VM
