@@ -6,8 +6,8 @@ export DEBIAN_FRONTEND=noninteractive
 echo "Updating package lists..."
 apt-get update -qq
 
-echo "Installing required packages..."
-apt-get install -y -qq \
+echo "Installing required packages (without upgrading existing)..."
+apt-get install -y -qq --no-upgrade \
     metasploit-framework \
     postgresql \
     python3 \
@@ -18,6 +18,8 @@ apt-get install -y -qq \
     wget \
     vim \
     tmux
+
+echo "Note: Skipping package upgrades to prevent SSH timeouts during provisioning"
 
 # Start PostgreSQL service first
 echo "Starting PostgreSQL service..."
