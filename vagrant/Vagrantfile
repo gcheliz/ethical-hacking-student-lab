@@ -81,10 +81,10 @@ Vagrant.configure("2") do |config|
       privileged: false,  # Run as vagrant user
       name: "Generate malicious PDFs"
 
-    # Provisioning - Setup automatic HTTP server
+    # Provisioning - Setup automatic services (HTTP server + Metasploit listener)
     kali.vm.provision "shell",
       path: "provisioning/kali/setup_autostart.sh",
-      name: "Setup automatic PDF HTTP server"
+      name: "Setup automatic services (HTTP + Metasploit listener)"
   end
 
   # =========================================================================
