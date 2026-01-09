@@ -54,10 +54,10 @@ function Write-Warning-Message {
 Clear-Host
 
 Write-Header "ETHICAL HACKING LAB - AUTOMATED LOCAL SETUP"
-Write-Header "PDF Exploit Demonstration Environment"
+Write-Header "LNK Shortcut Exploit - Fake PDF Attack"
 
 # STEP 1: Check Prerequisites
-Write-Step "[1/9] Checking prerequisites..."
+Write-Step "[1/7] Checking prerequisites..."
 Write-Host ""
 
 # Check if running as Administrator
@@ -119,99 +119,19 @@ if ($totalMemoryGB -lt $REQUIRED_RAM_GB) {
 
 Write-Host ""
 
-# STEP 2: Extract Adobe Reader from ZIP archive
-Write-Step "[2/9] Preparing Adobe Reader installer..."
+# STEP 2: Prepare Exploits Directory
+Write-Step "[2/7] Preparing exploits directory..."
 Write-Host ""
 
-$adobePath = "resources\AdobeReader_9.5.exe"
-$adobeZip = "resources\AdobeReader_9.5.zip"
-
-# Ensure resources directory exists
-New-Item -ItemType Directory -Force -Path "resources" | Out-Null
-
-# Check if extracted file already exists
-if (Test-Path $adobePath) {
-    $fileSizeMB = [math]::Round((Get-Item $adobePath).Length / 1MB, 2)
-    Write-Success "Adobe Reader installer ready (${fileSizeMB}MB)"
-}
-
-# If not ready, extract from ZIP
-if (-not (Test-Path $adobePath)) {
-    if (Test-Path $adobeZip) {
-        Write-Host "  Extracting Adobe Reader from ZIP archive..."
-
-        try {
-            # Extract using PowerShell Expand-Archive
-            $tempExtractPath = Join-Path $env:TEMP "adobe_extract_temp"
-
-            # Remove temp directory if exists
-            if (Test-Path $tempExtractPath) {
-                Remove-Item -Path $tempExtractPath -Recurse -Force
-            }
-
-            # Extract to temp directory
-            Expand-Archive -Path $adobeZip -DestinationPath $tempExtractPath -Force
-
-            # Find the .exe file (could be in subdirectory or with different name)
-            $extractedExe = Get-ChildItem -Path $tempExtractPath -Filter "*.exe" -Recurse | Select-Object -First 1
-
-            if ($extractedExe) {
-                # Copy to resources with correct name
-                Copy-Item -Path $extractedExe.FullName -Destination $adobePath -Force
-
-                # Cleanup temp directory
-                Remove-Item -Path $tempExtractPath -Recurse -Force
-
-                # Verify the copied file
-                $fileSizeMB = [math]::Round((Get-Item $adobePath).Length / 1MB, 2)
-                Write-Success "Extracted successfully (${fileSizeMB}MB)"
-            } else {
-                Write-Error-Message "No .exe file found in ZIP archive"
-                Write-Host ""
-                Write-Host "The ZIP archive may be empty or corrupted."
-                Write-Host "Please contact your instructor for the correct AdobeReader_9.5.zip file"
-
-                # Cleanup
-                if (Test-Path $tempExtractPath) {
-                    Remove-Item -Path $tempExtractPath -Recurse -Force
-                }
-                exit 1
-            }
-        } catch {
-            Write-Error-Message "Failed to extract: $($_.Exception.Message)"
-            Write-Host ""
-            Write-Host "Please try extracting manually:"
-            Write-Host "  1. Right-click resources\AdobeReader_9.5.zip"
-            Write-Host "  2. Select 'Extract All...'"
-            Write-Host "  3. Copy the .exe file to resources\AdobeReader_9.5.exe"
-            Write-Host "  4. Run setup.ps1 again"
-            exit 1
-        }
-    } else {
-        Write-Error-Message "Adobe Reader ZIP archive not found!"
-        Write-Host ""
-        Write-Host "The file resources\AdobeReader_9.5.zip is missing."
-        Write-Host ""
-        Write-Host "Required file: resources\AdobeReader_9.5.zip"
-        Write-Host "Please contact your instructor to obtain this file."
-        Write-Host ""
-        exit 1
-    }
-}
-
-# Final verification
-if (Test-Path $adobePath) {
-    $fileSizeMB = [math]::Round((Get-Item $adobePath).Length / 1MB, 2)
-    Write-Success "File verified (${fileSizeMB}MB)"
-} else {
-    Write-Error-Message "Adobe Reader installer not found after extraction"
-    exit 1
-}
+# Ensure exploits directory exists
+New-Item -ItemType Directory -Force -Path "exploits" | Out-Null
+Write-Success "Exploits directory ready"
+Write-Host "  Payload will be generated automatically by Kali VM" -ForegroundColor Cyan
 
 Write-Host ""
 
 # STEP 3: Configure VirtualBox Network
-Write-Step "[3/9] Configuring VirtualBox network..."
+Write-Step "[3/7] Configuring VirtualBox network..."
 Write-Host ""
 
 # Check if host-only network with correct IP exists
@@ -342,7 +262,7 @@ if ($verified) {
 Write-Host ""
 
 # STEP 4: Build Kali Linux VM
-Write-Step "[4/9] Building Kali Linux VM..."
+Write-Step "[4/7] Building Kali Linux VM..."
 Write-Host "  This will take 5-10 minutes..."
 Write-Host ""
 
@@ -398,7 +318,7 @@ if ($LASTEXITCODE -eq 0) {
 Write-Host ""
 
 # STEP 5: Build Windows VM
-Write-Step "[5/9] Building Windows Server 2008 R2 VM..."
+Write-Step "[5/7] Building Windows Server 2008 R2 VM..."
 Write-Host "  This will take 20-30 minutes (downloading and configuring)..."
 Write-Host "  Progress:"
 Write-Host "  - Downloading Windows box"
@@ -472,7 +392,7 @@ if ($LASTEXITCODE -eq 0) {
 Write-Host ""
 
 # STEP 6: Verify Connectivity
-Write-Step "[6/9] Verifying network connectivity..."
+Write-Step "[6/7] Verifying network connectivity..."
 Write-Host ""
 
 Write-Host "  Waiting for VMs to be fully ready..." -ForegroundColor Yellow
@@ -517,7 +437,7 @@ if ($LASTEXITCODE -eq 0) {
 Write-Host ""
 
 # STEP 7: Create Initial Snapshots
-Write-Step "[7/9] Creating snapshots for easy reset..."
+Write-Step "[7/7] Creating snapshots for easy reset..."
 Write-Host ""
 
 # Get actual VM names from VirtualBox
@@ -566,21 +486,6 @@ if ($windowsVM) {
 
 Write-Host ""
 
-# STEP 8: Verify Exploit Files
-Write-Step "[8/9] Verifying exploit materials..."
-Write-Host ""
-
-vagrant ssh kali -c "ls -lh ~/.msf4/local/JOAN-ESPINACH-TRD.pdf" 2>$null | Out-Null
-if ($LASTEXITCODE -eq 0) {
-    Write-Success "Malicious PDF generated"
-} else {
-    Write-Warning-Message "PDF not found, generating now..."
-    vagrant ssh kali -c "cd /vagrant/exploits && ./generate_pdf.sh"
-    Write-Success "PDF generated"
-}
-
-Write-Host ""
-
 Pop-Location
 
 # SUCCESS SUMMARY
@@ -604,7 +509,7 @@ Write-Host "  [OK] Windows Server 2008 R2 (Target)" -ForegroundColor Green
 Write-Host "    IP Address:      $WINDOWS_IP"
 Write-Host "    Username:        vagrant"
 Write-Host "    Password:        vagrant"
-Write-Host "    Vulnerability:   Adobe Reader 9.5.0"
+Write-Host "    Exploitation:    Automated LNK payload"
 Write-Host "    Security:        ALL DISABLED (intentionally vulnerable)"
 Write-Host ""
 Write-Host "Network:" -ForegroundColor Cyan
@@ -613,27 +518,28 @@ Write-Host "  [OK] Connectivity:       Verified" -ForegroundColor Green
 Write-Host "  [OK] Isolation:          Complete (no internet from VMs)" -ForegroundColor Green
 Write-Host ""
 Write-Host "Exploit Materials:" -ForegroundColor Cyan
-Write-Host "  [OK] Malicious PDF:      JOAN-ESPINACH-TRD.pdf" -ForegroundColor Green
-Write-Host "  [OK] Attack Scripts:     Ready in /vagrant/exploits" -ForegroundColor Green
+Write-Host "  [OK] Payload:            shell.ps1 (PowerShell Meterpreter)" -ForegroundColor Green
+Write-Host "  [OK] LNK File:           Q4_Financial_Report.pdf.lnk" -ForegroundColor Green
+Write-Host "  [OK] Attack Scripts:     Ready in /vagrant/exploits/lnk" -ForegroundColor Green
 Write-Host "  [OK] Snapshots:          Created for easy reset" -ForegroundColor Green
 Write-Host ""
 Write-Host "================================================================" -ForegroundColor Cyan
 Write-Host "                        NEXT STEPS" -ForegroundColor Cyan
 Write-Host "================================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "1. Read the lab guide:" -ForegroundColor Yellow
-Write-Host "   start docs\LAB_GUIDE.pdf" -ForegroundColor Cyan
+Write-Host "1. Read the exploit guide:" -ForegroundColor Yellow
+Write-Host "   start LNK_EXPLOIT_GUIDE.md" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "2. Access the VMs:" -ForegroundColor Yellow
 Write-Host "   cd vagrant" -ForegroundColor Cyan
 Write-Host "   vagrant ssh kali          # SSH into Kali Linux" -ForegroundColor Cyan
 Write-Host "   vagrant rdp win2k8        # RDP into Windows (GUI)" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "3. Run the automated attack:" -ForegroundColor Yellow
+Write-Host "3. Run the LNK attack:" -ForegroundColor Yellow
 Write-Host "   cd vagrant" -ForegroundColor Cyan
 Write-Host "   vagrant ssh kali" -ForegroundColor Cyan
-Write-Host "   cd /vagrant/exploits" -ForegroundColor Cyan
-Write-Host "   ./start_attack.sh" -ForegroundColor Cyan
+Write-Host "   cd /vagrant/exploits/lnk" -ForegroundColor Cyan
+Write-Host "   ./start_lnk_attack.sh" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "4. Reset to clean state when done:" -ForegroundColor Yellow
 Write-Host "   .\reset.ps1" -ForegroundColor Cyan
@@ -642,8 +548,8 @@ Write-Host "================================================================" -F
 Write-Host "                      DOCUMENTATION" -ForegroundColor Cyan
 Write-Host "================================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  Lab Guide:           docs\LAB_GUIDE.pdf"
-Write-Host "  Quick Start:         docs\QUICK_START.md"
+Write-Host "  LNK Exploit Guide:   LNK_EXPLOIT_GUIDE.md"
+Write-Host "  How To Use:          HOW_TO_USE.md"
 Write-Host "  Troubleshooting:     TROUBLESHOOTING.md"
 Write-Host "  Instructor Guide:    docs\INSTRUCTOR_GUIDE.pdf"
 Write-Host ""
