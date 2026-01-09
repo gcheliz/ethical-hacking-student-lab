@@ -188,7 +188,7 @@ The script will:
 1. Check prerequisites
 2. Prepare exploits directory
 3. Configure VirtualBox Host-Only network
-4. Build Kali Linux VM (5-10 min)
+4. Build Kali Linux VM (5-10 min, includes automatic reboot)
 5. Build Windows VM (20-30 min)
 6. Verify connectivity between VMs
 7. Create snapshots

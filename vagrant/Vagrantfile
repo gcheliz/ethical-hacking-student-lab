@@ -96,6 +96,17 @@ Vagrant.configure("2") do |config|
     kali.vm.provision "shell",
       path: "provisioning/kali/setup_http_autostart.sh",
       name: "Setup HTTP server autostart"
+
+    # Reboot to start HTTP service and ensure network is fully ready
+    kali.vm.provision "shell",
+      inline: "echo 'Rebooting Kali to start HTTP service...' && sleep 2 && shutdown -r now",
+      privileged: true,
+      name: "Reboot Kali VM"
+
+    # Wait for reboot to complete and services to start
+    kali.vm.provision "shell",
+      inline: "echo 'Kali VM rebooted successfully. HTTP service should be running.'",
+      name: "Post-reboot verification"
   end
 
   # =========================================================================

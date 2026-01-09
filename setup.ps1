@@ -189,6 +189,7 @@ Write-Host ""
 # STEP 4: Build Kali Linux VM
 Write-Step "[4/7] Building Kali Linux VM..."
 Write-Host "  This will take 5-10 minutes..."
+Write-Host "  Note: Kali will reboot during provisioning to start HTTP service" -ForegroundColor Cyan
 Write-Host ""
 
 Push-Location vagrant

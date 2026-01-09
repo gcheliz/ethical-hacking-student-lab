@@ -117,6 +117,7 @@ echo
 # ============================================================================
 echo -e "${YELLOW}[4/7] Building Kali Linux VM...${NC}"
 echo "  This will take 5-10 minutes..."
+echo "  Note: Kali will reboot during provisioning to start HTTP service"
 echo
 
 cd vagrant
