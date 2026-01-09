@@ -11,12 +11,14 @@ sudo tee /etc/systemd/system/pdf-server.service > /dev/null << 'EOF'
 [Unit]
 Description=Malicious PDF HTTP Server
 After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 User=vagrant
 WorkingDirectory=/home/vagrant/.msf4/local
-# Bind only to host-only interface (192.168.56.101)
+# Wait for network interface to be ready, then bind to host-only interface
+ExecStartPre=/bin/bash -c 'until ip addr show | grep -q "192.168.56.101"; do sleep 1; done'
 ExecStart=/usr/bin/python3 -m http.server 8080 --bind 192.168.56.101
 Restart=always
 RestartSec=10
@@ -29,21 +31,23 @@ EOF
 sudo systemctl daemon-reload
 sudo systemctl enable pdf-server.service
 
-# Try to start now if PDF exists
-if [ -f "/home/vagrant/.msf4/local/JOAN-ESPINACH-TRD.pdf" ]; then
-    sudo systemctl start pdf-server.service
-
+# Try to start now
+echo "Starting HTTP server..."
+if sudo systemctl start pdf-server.service 2>/dev/null; then
     # Wait a moment and check status
-    sleep 2
+    sleep 3
     if sudo systemctl is-active --quiet pdf-server.service; then
-        echo "✓ HTTP server started successfully on port 8080"
-        echo "  PDF URL: http://192.168.56.101:8080/JOAN-ESPINACH-TRD.pdf"
+        echo "✓ HTTP server started successfully"
+        if [ -f "/home/vagrant/.msf4/local/JOAN-ESPINACH-TRD.pdf" ]; then
+            echo "  PDF URL: http://192.168.56.101:8080/JOAN-ESPINACH-TRD.pdf"
+        fi
     else
-        echo "⚠ HTTP server failed to start, but will start on next boot"
+        echo "⚠ HTTP server not running yet (network may still be initializing)"
+        echo "  Service will start automatically on boot"
     fi
 else
-    echo "⚠ PDF not found yet, HTTP server will start on next boot"
-    echo "  Service enabled and will start automatically"
+    echo "⚠ Could not start HTTP server during provisioning"
+    echo "  Service enabled and will start on next boot"
 fi
 
 echo ""
