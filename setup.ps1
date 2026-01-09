@@ -322,7 +322,6 @@ Write-Step "[5/7] Building Windows Server 2008 R2 VM..."
 Write-Host "  This will take 20-30 minutes (downloading and configuring)..."
 Write-Host "  Progress:"
 Write-Host "  - Downloading Windows box"
-Write-Host "  - Installing Adobe Reader 9.5.0"
 Write-Host "  - Disabling all security features"
 Write-Host "  - Configuring network"
 Write-Host ""
@@ -377,12 +376,10 @@ vagrant up win2k8 --provider virtualbox
 if ($LASTEXITCODE -eq 0) {
     Write-Success "Windows Server VM ready"
     Write-Success "IP: $WINDOWS_IP"
-    Write-Success "Adobe Reader 9.5.0 installed"
     Write-Success "AppLocker disabled"
     Write-Success "Windows Firewall disabled"
     Write-Success "Windows Defender disabled"
     Write-Success "UAC disabled"
-    Write-Success "Adobe security disabled"
 } else {
     Write-Error-Message "Failed to build Windows VM"
     Pop-Location

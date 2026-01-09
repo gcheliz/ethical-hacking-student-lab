@@ -250,7 +250,7 @@ cd ethical-hacking-student-lab
   - Creates VM with 4GB RAM, 2 CPUs
   - Configures network (192.168.56.102)
   - Disables all security features
-  - Configures Adobe Reader
+  - Tests connectivity to Kali
 
 [6/7] Verifying network connectivity
   - Tests Kali → Windows (ping)

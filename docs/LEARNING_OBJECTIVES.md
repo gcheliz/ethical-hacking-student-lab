@@ -1,32 +1,32 @@
 # Learning Objectives
-## Ethical Hacking PDF Exploit Lab
+## Ethical Hacking LNK Exploit Lab
 
 ---
 
 ## Overview
 
-This lab demonstrates a real-world attack scenario using a vulnerable PDF reader to gain unauthorized access to a Windows system. Students will learn both offensive and defensive security concepts.
+This lab demonstrates a real-world social engineering attack using malicious Windows shortcut files (.lnk) disguised as PDF documents to gain unauthorized access to a Windows system. Students will learn both offensive and defensive security concepts.
 
 ---
 
 ## Primary Learning Objectives
 
-### 1. Understanding Vulnerability Exploitation
+### 1. Understanding Social Engineering Attacks
 
 **What Students Learn:**
-- How software vulnerabilities can be exploited
-- The concept of buffer overflows in PDF readers
-- Why keeping software updated is critical
+- How attackers deceive users with disguised files
+- The danger of hidden file extensions in Windows
+- Why user awareness training is critical
 
 **Specific Skills:**
-- Identifying vulnerable software versions
-- Understanding CVE (Common Vulnerabilities and Exposures)
-- Reading vulnerability disclosures and documentation
+- Understanding file extension spoofing
+- Recognizing Windows shortcut file manipulation
+- Identifying social engineering tactics
 
 **Lab Application:**
-- CVE-2010-2883: Adobe Reader CoolType font vulnerability
-- Understanding how malformed PDFs can execute code
-- Recognizing exploitation indicators
+- LNK files with PDF icons and fake extensions
+- How "Q4_Financial_Report.pdf.lnk" appears as "Q4_Financial_Report.pdf"
+- Understanding visual deception techniques
 
 ---
 
@@ -35,17 +35,17 @@ This lab demonstrates a real-world attack scenario using a vulnerable PDF reader
 **What Students Learn:**
 - Social engineering basics
 - File-based attack vectors
-- Weaponizing legitimate file formats
+- Weaponizing Windows system features
 
 **Specific Skills:**
 - Creating malicious payloads
-- Understanding file format exploitation
+- Understanding LNK file structure and manipulation
 - Delivery mechanisms (email, USB, downloads)
 
 **Lab Application:**
-- Generating malicious PDFs with Metasploit
-- Understanding payload embedding
-- Professional-looking malicious documents
+- Generating LNK files with pylnk3
+- Embedding PowerShell commands in shortcuts
+- Creating convincing fake documents
 
 ---
 
@@ -173,13 +173,13 @@ This lab demonstrates a real-world attack scenario using a vulnerable PDF reader
 By completing this lab, students should be able to:
 
 ### Knowledge Level (Understanding)
-- [ ] Explain how PDF vulnerabilities work
+- [ ] Explain how LNK file social engineering works
 - [ ] Describe the exploitation process
 - [ ] Identify security controls and their purposes
 - [ ] Understand reverse shell concepts
 
 ### Application Level (Doing)
-- [ ] Generate malicious PDFs using Metasploit
+- [ ] Generate malicious LNK files with embedded PowerShell
 - [ ] Configure and run exploit listeners
 - [ ] Navigate Meterpreter sessions
 - [ ] Gather system information from compromised hosts
@@ -192,7 +192,7 @@ By completing this lab, students should be able to:
 - [ ] Compare various exploitation techniques
 
 ### Synthesis Level (Creating)
-- [ ] Design defense strategies against file-based attacks
+- [ ] Design defense strategies against file-based social engineering
 - [ ] Propose security improvements for vulnerable systems
 - [ ] Create documentation of exploitation process
 - [ ] Develop security awareness training materials
@@ -250,7 +250,7 @@ By completing this lab, students should be able to:
 
 ### Minimum Competency (70%)
 - Successfully set up lab environment
-- Execute basic PDF exploit
+- Execute basic LNK exploit
 - Obtain Meterpreter shell
 - Run basic post-exploitation commands
 
@@ -267,7 +267,7 @@ By completing this lab, students should be able to:
 - Demonstrate bonus challenges
 
 ### Expert (100%)
-- Create custom malicious PDFs
+- Create custom malicious LNK files
 - Automate full attack chain
 - Implement and test defenses
 - Present findings professionally
@@ -303,10 +303,11 @@ By completing this lab, students should be able to:
 ## Learning Resources
 
 ### Included Documentation
-- LAB_GUIDE.pdf - Step-by-step instructions
-- QUICK_START.md - Fast setup guide
+- README.md - Main lab guide
+- INSTALLATION.md - Setup instructions
+- HOW_TO_USE.md - Usage scenarios
 - TROUBLESHOOTING.md - Common issues
-- INSTRUCTOR_GUIDE.pdf - Teaching notes
+- LNK_EXPLOIT_GUIDE.md - Technical details
 
 ### External Resources
 - Metasploit Unleashed (free course)

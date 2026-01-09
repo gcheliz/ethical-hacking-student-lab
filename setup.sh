@@ -149,7 +149,6 @@ echo -e "${YELLOW}[5/7] Building Windows Server 2008 R2 VM...${NC}"
 echo "  This will take 20-30 minutes (downloading and configuring)..."
 echo "  Progress:"
 echo "  - Downloading Windows box"
-echo "  - Installing Adobe Reader 9.5.0"
 echo "  - Disabling all security features"
 echo "  - Configuring network"
 echo
@@ -166,12 +165,10 @@ vagrant up win2k8 --provider virtualbox
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}  ✓ Windows Server VM ready${NC}"
     echo -e "${GREEN}  ✓ IP: $WINDOWS_IP${NC}"
-    echo -e "${GREEN}  ✓ Adobe Reader 9.5.0 installed${NC}"
     echo -e "${GREEN}  ✓ AppLocker disabled${NC}"
     echo -e "${GREEN}  ✓ Windows Firewall disabled${NC}"
     echo -e "${GREEN}  ✓ Windows Defender disabled${NC}"
     echo -e "${GREEN}  ✓ UAC disabled${NC}"
-    echo -e "${GREEN}  ✓ Adobe security disabled${NC}"
 else
     echo -e "${RED}✗ Failed to build Windows VM${NC}"
     exit 1

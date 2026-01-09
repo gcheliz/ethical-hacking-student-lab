@@ -92,7 +92,7 @@ cd /vagrant/exploits/lnk
 | VM | IP | Role | Software | Resources |
 |----|-----|------|----------|-----------|
 | **Kali Linux** | 192.168.56.101 | Attacker | Metasploit, Python3, pylnk3 | 3GB RAM, 2 CPU |
-| **Windows Server 2008 R2** | 192.168.56.102 | Target | Adobe Reader 9.0 | 4GB RAM, 2 CPU |
+| **Windows Server 2008 R2** | 192.168.56.102 | Target | Security Disabled | 4GB RAM, 2 CPU |
 
 ### Network Configuration
 

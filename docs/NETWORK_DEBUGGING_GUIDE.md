@@ -92,10 +92,10 @@ VBoxManage list hostonlyifs     # For Linux/Windows
 VBoxManage list vms
 
 # Check Kali network
-VBoxManage showvminfo "Kali_PDF_Exploit_Lab_*" | grep -i "nic"
+VBoxManage showvminfo "Kali_LNK_Exploit_Lab_*" | grep -i "nic"
 
 # Check Windows network
-VBoxManage showvminfo "Windows_PDF_Target_Lab_*" | grep -i "nic"
+VBoxManage showvminfo "Windows_LNK_Target_Lab_*" | grep -i "nic"
 ```
 
 **Expected:**
@@ -130,56 +130,27 @@ netsh advfirewall show allprofiles
 If you want firewall on but allow exploitation:
 
 ```powershell
-# Allow SMB (for EternalBlue)
-netsh advfirewall firewall add rule name="SMB" dir=in action=allow protocol=TCP localport=445
-
 # Allow ICMP ping
 netsh advfirewall firewall add rule name="ICMPv4" protocol=icmpv4:8,any dir=in action=allow
 ```
 
 ---
 
-## 5. Check Specific Services
-
-### For EternalBlue (SMB)
-
-**On Windows:**
-```powershell
-# Check SMB service
-Get-Service LanmanServer
-
-# Should show: Status = Running
-
-# Check if port 445 is listening
-netstat -an | findstr :445
-
-# Should show: 0.0.0.0:445  LISTENING
-```
-
-**From Kali:**
-```bash
-# Check if port 445 is accessible
-nc -zv 192.168.56.102 445
-
-# Or use nmap
-nmap -p 445 192.168.56.102
-```
-
-### For PDF Exploit (HTTP Server)
+## 5. Check HTTP Server (LNK Exploit)
 
 **On Kali:**
 ```bash
-# Check if HTTP server is running (if using PDF exploit)
-netstat -tlnp | grep :8000
+# Check if HTTP server is running
+netstat -tlnp | grep :8080
 
 # Or check with curl locally
-curl http://localhost:8000
+curl http://localhost:8080/shell.ps1
 ```
 
 **From Windows:**
 ```powershell
 # Test HTTP access from Windows to Kali
-Invoke-WebRequest http://192.168.56.101:8000
+Invoke-WebRequest http://192.168.56.101:8080/shell.ps1
 ```
 
 ---
@@ -299,19 +270,16 @@ netsh interface ip set address "Local Area Connection 2" static 192.168.56.102 2
 
 ### Issue: Ping works but exploit doesn't
 
-This means network is OK, but service issue:
+This means network is OK, but HTTP server issue:
 
-**For EternalBlue:**
-```powershell
-# On Windows - ensure SMB is running
-net start LanmanServer
-```
-
-**For PDF exploit:**
+**Check HTTP server on Kali:**
 ```bash
 # On Kali - check HTTP server
-cd ~/exploits
-python3 -m http.server 8000
+cd /vagrant/exploits/lnk
+python3 -m http.server 8080
+
+# Verify it's serving the payload
+curl http://localhost:8080/shell.ps1
 ```
 
 ---
@@ -380,21 +348,27 @@ else
     exit 1
 fi
 
-# Test 3: Check SMB port
+# Test 3: Check HTTP port
 echo ""
-echo "[3/5] Checking SMB port 445..."
-if nc -zv 192.168.56.102 445 2>&1 | grep -q succeeded; then
-    echo "  ✓ Port 445 is open"
+echo "[3/5] Checking HTTP server on Kali..."
+if nc -zv 127.0.0.1 8080 2>&1 | grep -q succeeded; then
+    echo "  ✓ HTTP server is running on port 8080"
 else
-    echo "  ✗ Port 445 is NOT accessible"
-    echo "  Check: SMB service on Windows"
+    echo "  ✗ HTTP server is NOT running"
+    echo "  Start: cd /vagrant/exploits/lnk && python3 -m http.server 8080"
     exit 1
 fi
 
-# Test 4: SMB protocol check
+# Test 4: Check payload file
 echo ""
-echo "[4/5] Checking SMB protocol..."
-nmap -p 445 --script smb-protocols 192.168.56.102 | grep -A 5 "smb-protocols"
+echo "[4/5] Checking payload file..."
+if [ -f "/vagrant/exploits/lnk/shell.ps1" ]; then
+    echo "  ✓ PowerShell payload exists"
+else
+    echo "  ✗ shell.ps1 not found"
+    echo "  Generate: cd /vagrant/vagrant/provisioning/kali && ./create_lnk_exploit.sh"
+    exit 1
+fi
 
 # Test 5: Route check
 echo ""
@@ -427,21 +401,22 @@ chmod +x test_network.sh
 
 ## Summary: Network Must-Haves
 
-For exploitation to work, you MUST have:
+For the LNK exploit to work, you MUST have:
 
 1. ✓ Kali IP: `192.168.56.101` on eth1 (or similar)
 2. ✓ Windows IP: `192.168.56.102` on second adapter
 3. ✓ Ping works both directions
-4. ✓ Windows firewall OFF (or ports allowed)
-5. ✓ Target service running (SMB for EternalBlue)
-6. ✓ Both VMs on same host-only network
+4. ✓ Windows firewall OFF
+5. ✓ HTTP server running on Kali (port 8080)
+6. ✓ PowerShell payload (shell.ps1) exists
+7. ✓ Both VMs on same host-only network
 
-If all 6 are true, exploitation will work!
+If all 7 are true, exploitation will work!
 
 ---
 
 ## Need More Help?
 
 - Check full troubleshooting: [TROUBLESHOOTING.md](../TROUBLESHOOTING.md)
-- Simpler exploits guide: [SIMPLER_EXPLOITS.md](./SIMPLER_EXPLOITS.md)
-- EternalBlue setup: `exploits/eternalblue/README.md`
+- LNK exploit guide: [LNK_EXPLOIT_GUIDE.md](../LNK_EXPLOIT_GUIDE.md)
+- How to use: [HOW_TO_USE.md](../HOW_TO_USE.md)
