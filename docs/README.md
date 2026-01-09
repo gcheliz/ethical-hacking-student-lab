@@ -13,8 +13,6 @@ Additional documentation and troubleshooting guides for the Ethical Hacking Lab.
 ### Troubleshooting Guides
 - `TROUBLESHOOT_EXPLOIT.md` - PDF exploit troubleshooting (when Meterpreter session doesn't open)
 - `KALI_SSH_ISSUES.md` - Kali VM boot and SSH issues
-- `APPLY_NETWORK_FIX.md` - Complete guide for network adapter fixes
-- `QUICK_FIX_NETWORK.md` - Quick manual network fix commands
 
 ### Advanced Documentation
 - `MAINTAINER_SETUP.md` - For repository maintainers
