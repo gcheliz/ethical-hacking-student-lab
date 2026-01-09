@@ -123,8 +123,8 @@ Write-Host
 
 try {
     `$tcpClient = New-Object System.Net.Sockets.TcpClient
-    `$connection = `$tcpClient.BeginConnect(`$KALI_IP, `$PORT, `$null, `$null)
-    `$wait = `$connection.AsyncWaitHandle.WaitOne(5000, `$false)
+    `$connection = `$tcpClient.BeginConnect(`$KALI_IP, `$PORT, $null, $null)
+    `$wait = `$connection.AsyncWaitHandle.WaitOne(5000, $false)
 
     if (`$wait) {
         `$tcpClient.EndConnect(`$connection)
