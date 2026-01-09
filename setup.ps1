@@ -130,51 +130,60 @@ Write-Host "  Payload will be generated automatically by Kali VM" -ForegroundCol
 
 Write-Host ""
 
-# STEP 3: Configure VirtualBox NAT Network
-Write-Step "[3/7] Configuring VirtualBox NAT Network..."
+# STEP 3: Configure VirtualBox Host-Only Network
+Write-Step "[3/7] Configuring VirtualBox Host-Only network..."
 Write-Host ""
 
 $vboxManage = "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe"
 
-# Check if NAT Network already exists
-$natNetworkName = "LNK_Exploit_Lab_Network"
-$natNetworks = & $vboxManage natnetwork list 2>$null
+# Check if host-only network with correct IP exists
+$networkList = & $vboxManage list hostonlyifs 2>$null
+$NETWORK_NAME = $null
 
-if ($natNetworks -and ($natNetworks -match $natNetworkName)) {
-    Write-Host "  NAT Network '$natNetworkName' already exists" -ForegroundColor Cyan
-    Write-Success "Using existing NAT Network"
-} else {
-    Write-Host "  Creating NAT Network..." -ForegroundColor Cyan
-    Write-Host "  Name: $natNetworkName" -ForegroundColor Cyan
-    Write-Host "  Network: 192.168.56.0/24" -ForegroundColor Cyan
-    Write-Host "  DHCP: Disabled (using static IPs)" -ForegroundColor Cyan
-    Write-Host ""
+# Find adapter with IP 192.168.56.1
+if ($networkList) {
+    $lines = $networkList -split "`n"
+    $currentAdapter = $null
+    foreach ($line in $lines) {
+        if ($line -match "^Name:\s+(.+)") {
+            $currentAdapter = $Matches[1].Trim()
+        }
+        if ($line -match "^IPAddress:\s+192\.168\.56\.1") {
+            $NETWORK_NAME = $currentAdapter
+            Write-Host "  Found existing Host-Only network: $NETWORK_NAME" -ForegroundColor Cyan
+            break
+        }
+    }
+}
 
-    # Create NAT Network
-    $createArgs = @("natnetwork", "add", "--netname", $natNetworkName, "--network", "192.168.56.0/24", "--enable", "--dhcp", "off")
-    $createOutput = & $vboxManage $createArgs 2>&1
+# Create or reconfigure if needed
+if (-not $NETWORK_NAME) {
+    Write-Host "  Creating Host-Only network..." -ForegroundColor Cyan
+    & $vboxManage hostonlyif create | Out-Null
+    Start-Sleep -Seconds 1
 
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error-Message "Failed to create NAT Network"
-        Write-Host "Output: $createOutput" -ForegroundColor Red
-        exit 1
+    $networkList = & $vboxManage list hostonlyifs
+    $lines = $networkList -split "`n"
+    foreach ($line in $lines) {
+        if ($line -match "^Name:\s+(.+)") {
+            $NETWORK_NAME = $Matches[1].Trim()
+            break
+        }
     }
 
-    Write-Success "NAT Network created successfully"
+    # Configure IP
+    & $vboxManage hostonlyif ipconfig $NETWORK_NAME --ip 192.168.56.1 --netmask 255.255.255.0
 }
 
-# Verify NAT Network configuration
-$verifyNetworks = & $vboxManage natnetwork list 2>$null
-if ($verifyNetworks -and ($verifyNetworks -match $natNetworkName)) {
-    Write-Success "NAT Network configured: 192.168.56.0/24"
-    Write-Success "Network name: $natNetworkName"
-} else {
-    Write-Error-Message "Failed to verify NAT Network"
-    Write-Host ""
-    Write-Host "Current NAT networks:" -ForegroundColor Yellow
-    & $vboxManage natnetwork list
-    exit 1
+# Disable DHCP
+try {
+    & $vboxManage dhcpserver modify --ifname $NETWORK_NAME --disable 2>$null | Out-Null
+} catch {
+    & $vboxManage dhcpserver add --ifname $NETWORK_NAME --ip 192.168.56.1 --netmask 255.255.255.0 --lowerip 192.168.56.100 --upperip 192.168.56.200 --disable 2>$null | Out-Null
 }
+
+Write-Success "Host-Only network configured: 192.168.56.0/24"
+Write-Success "Network interface: $NETWORK_NAME"
 Write-Host ""
 
 # STEP 4: Build Kali Linux VM
@@ -426,9 +435,9 @@ Write-Host "    Exploitation:    Automated LNK payload"
 Write-Host "    Security:        ALL DISABLED (intentionally vulnerable)"
 Write-Host ""
 Write-Host "Network:" -ForegroundColor Cyan
-Write-Host "  [OK] NAT Network:        192.168.56.0/24 (LNK_Exploit_Lab_Network)" -ForegroundColor Green
-Write-Host "  [OK] Connectivity:       Verified (VM-to-VM + Internet)" -ForegroundColor Green
-Write-Host "  [OK] Configuration:      Single adapter per VM" -ForegroundColor Green
+Write-Host "  [OK] Host-Only Network:  192.168.56.0/24" -ForegroundColor Green
+Write-Host "  [OK] Connectivity:       Verified (VM-to-VM)" -ForegroundColor Green
+Write-Host "  [OK] NAT Adapter:        Internet access for provisioning" -ForegroundColor Green
 Write-Host ""
 Write-Host "Exploit Materials:" -ForegroundColor Cyan
 Write-Host "  [OK] Payload:            shell.ps1 (PowerShell Meterpreter)" -ForegroundColor Green

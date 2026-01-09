@@ -12,7 +12,7 @@ MAX_WAIT=30
 WAIT_COUNT=0
 REQUIRED_IP="192.168.56.101"
 GATEWAY="192.168.56.1"
-IFACE="eth0"  # Single NAT Network adapter
+IFACE="eth1"  # Host-Only adapter (eth0 is NAT for SSH)
 
 echo "================================"
 echo "Verifying Network Readiness"

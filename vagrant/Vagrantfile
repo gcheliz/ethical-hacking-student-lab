@@ -33,10 +33,20 @@ Vagrant.configure("2") do |config|
     kali.ssh.keep_alive = true
     kali.vm.boot_timeout = 900  # 15 minutes for Kali
 
-    # Network - Single NAT Network adapter
-    # Provides both VM-to-VM communication AND internet access
-    # Static IP will be configured during provisioning
-    # NAT Network must be created first: vagrant/create_nat_network.sh
+    # Network - host-only network for VM-to-VM communication
+    # NAT adapter (eth0/adapter 1) is added automatically by Vagrant for management
+    # Host-only adapter (eth1/adapter 2) is for exploit traffic
+    kali.vm.network "private_network",
+      ip: "192.168.56.101",
+      netmask: "255.255.255.0",
+      auto_config: true,  # Auto-configure for reliability
+      virtualbox__intnet: false  # Use host-only adapter, not internal network
+
+    # Optional: Use host-only network for SSH instead of NAT
+    # Uncomment to SSH via 192.168.56.101 instead of NAT
+    # Note: This requires the host-only network to be configured first
+    # kali.ssh.host = "192.168.56.101"
+    # kali.ssh.port = 22
 
     # VirtualBox provider settings
     kali.vm.provider "virtualbox" do |vb|
@@ -45,14 +55,11 @@ Vagrant.configure("2") do |config|
       vb.cpus = 2
       vb.gui = false  # Headless (use SSH)
 
-      # Attach to NAT Network (single adapter for both internet + VM-to-VM)
-      vb.customize ["modifyvm", :id, "--nic1", "natnetwork"]
-      vb.customize ["modifyvm", :id, "--nat-network1", "LNK_Exploit_Lab_Network"]
-      vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
-
-      # DNS settings for internet access
+      # Performance optimizations
       vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
       vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
+      vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
+      vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
     end
 
     # Shared folders - must be mounted for payload provisioning
@@ -102,10 +109,15 @@ Vagrant.configure("2") do |config|
     win.vm.boot_timeout = 600
     win.winrm.timeout = 1800  # 30 minutes for slow operations
 
-    # Network - Single NAT Network adapter
-    # Provides both VM-to-VM communication AND internet access
-    # Static IP will be configured during provisioning
-    # NAT Network must be created first: vagrant/create_nat_network.sh
+    # Network - host-only network for VM-to-VM communication
+    # NAT adapter is added automatically by Vagrant for WinRM management
+    # Host-only adapter is for exploit traffic
+    win.vm.network "private_network",
+      ip: "192.168.56.102",
+      netmask: "255.255.255.0",
+      gateway: "192.168.56.1",
+      auto_config: true,
+      virtualbox__intnet: false  # Use host-only adapter, not internal network
 
     # VirtualBox provider settings
     win.vm.provider "virtualbox" do |vb|
@@ -114,15 +126,14 @@ Vagrant.configure("2") do |config|
       vb.cpus = 2
       vb.gui = true  # GUI enabled (can be set to false for headless)
 
-      # Attach to NAT Network (single adapter for both internet + VM-to-VM)
-      vb.customize ["modifyvm", :id, "--nic1", "natnetwork"]
-      vb.customize ["modifyvm", :id, "--nat-network1", "LNK_Exploit_Lab_Network"]
-      vb.customize ["modifyvm", :id, "--nictype1", "82540EM"]  # Intel PRO/1000
-
       # GUI optimizations
       vb.customize ["modifyvm", :id, "--vram", "128"]
       vb.customize ["modifyvm", :id, "--clipboard", "bidirectional"]
       vb.customize ["modifyvm", :id, "--draganddrop", "bidirectional"]
+
+      # Performance
+      vb.customize ["modifyvm", :id, "--nictype1", "82540EM"]
+      vb.customize ["modifyvm", :id, "--nictype2", "82540EM"]
     end
 
     # Shared folder for Windows to access payload from Kali
@@ -130,25 +141,19 @@ Vagrant.configure("2") do |config|
       owner: "vagrant",
       group: "vagrant"
 
-    # Provisioning Step 1: Configure static IP on NAT Network
-    win.vm.provision "shell",
-      path: "provisioning/windows/configure_static_ip.ps1",
-      privileged: true,
-      name: "Configure static IP on NAT Network"
-
-    # Provisioning Step 2: Disable ALL security
+    # Provisioning Step 1: Disable ALL security
     win.vm.provision "shell",
       path: "provisioning/windows/disable_security.ps1",
       privileged: true,
       name: "Disable Windows security features"
 
-    # Provisioning Step 3: Create desktop shortcuts
+    # Provisioning Step 2: Create desktop shortcuts
     win.vm.provision "shell",
       path: "provisioning/windows/create_shortcuts.ps1",
       privileged: true,
       name: "Create desktop shortcuts"
 
-    # Provisioning Step 4: Test connectivity to Kali
+    # Provisioning Step 3: Test connectivity to Kali
     win.vm.provision "shell",
       path: "provisioning/windows/test_kali_connectivity.ps1",
       privileged: true,

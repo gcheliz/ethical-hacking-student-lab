@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
-# Configure Static IP for NAT Network
-# NAT Network uses DHCP by default, but we need static IPs for the exploit
+# Configure Static IP for Host-Only Network
+# Ensures eth1 (Host-Only adapter) has correct static IP
 ################################################################################
 
 set -e
@@ -10,7 +10,7 @@ set -e
 EXPECTED_IP="192.168.56.101"
 NETMASK="255.255.255.0"
 GATEWAY="192.168.56.1"
-IFACE="eth0"  # Single NAT Network adapter
+IFACE="eth1"  # Host-Only adapter (eth0 is NAT for SSH)
 
 echo "================================"
 echo "Static IP Configuration"
