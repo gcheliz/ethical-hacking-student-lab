@@ -74,12 +74,6 @@ set ExitOnSession false
 set SessionCommunicationTimeout 300
 set EnableStageEncoding true
 exploit -j -z
-
-# Keep console alive with infinite loop - prevents msfconsole from exiting
-puts "[*] Listener started. Press Ctrl+C to stop."
-loop do
-  sleep 60
-end
 EOF
 
 # Create systemd service for Metasploit listener
@@ -97,7 +91,8 @@ Environment="HOME=/home/vagrant"
 Environment="XDG_CACHE_HOME=/home/vagrant/.cache"
 Environment="TMPDIR=/home/vagrant/tmp"
 # Bind explicitly to host-only interface eth1 (192.168.56.101:4444)
-ExecStart=/usr/bin/msfconsole -q -r /etc/metasploit/listener.rc
+# Use -r for resource script and sleep infinity to keep process alive
+ExecStart=/bin/bash -c '/usr/bin/msfconsole -q -r /etc/metasploit/listener.rc -x "sleep infinity"'
 Restart=always
 RestartSec=10
 StandardOutput=journal
