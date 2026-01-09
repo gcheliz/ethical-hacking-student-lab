@@ -141,42 +141,24 @@ Read-Host "Press Enter to close this window"
 # Save the download script to Desktop
 $scriptPath = Join-Path $DESKTOP "Download-PDFs-from-Kali.ps1"
 
-Write-Host "[1/2] Creating download script on Desktop..." -NoNewline
+Write-Host "Creating download script on Desktop..." -NoNewline
 try {
     $downloadScript | Out-File -FilePath $scriptPath -Encoding ASCII -Force
     Write-Host " Done" -ForegroundColor Green
-    Write-Host "    Location: $scriptPath" -ForegroundColor Gray
+    Write-Host "  Location: $scriptPath" -ForegroundColor Gray
 } catch {
     Write-Host " Failed" -ForegroundColor Red
-    Write-Host "    Error: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "  Error: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 }
-
-Write-Host
-
-# Create a shortcut to run the script easily
-Write-Host "[2/2] Creating desktop shortcut..." -NoNewline
-
-$shortcutPath = Join-Path $DESKTOP "Download Malicious PDFs.lnk"
-$WshShell = New-Object -ComObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut($shortcutPath)
-$Shortcut.TargetPath = "powershell.exe"
-$Shortcut.Arguments = "-ExecutionPolicy Bypass -File `"$scriptPath`""
-$Shortcut.WorkingDirectory = $DESKTOP
-$Shortcut.Description = "Download malicious PDFs from Kali HTTP server"
-$Shortcut.IconLocation = "C:\Windows\System32\shell32.dll,21"  # Download icon
-$Shortcut.Save()
-
-Write-Host " Done" -ForegroundColor Green
-Write-Host "    Shortcut: $shortcutPath" -ForegroundColor Gray
 
 Write-Host
 Write-Host "===================================================" -ForegroundColor Green
 Write-Host "  Setup Complete" -ForegroundColor Green
 Write-Host "===================================================" -ForegroundColor Green
 Write-Host
-Write-Host "After reboot, you can:" -ForegroundColor Cyan
-Write-Host "  1. Double-click 'Download Malicious PDFs' on Desktop" -ForegroundColor Gray
-Write-Host "  2. PDFs will be downloaded from Kali (${KALI_IP}:${HTTP_PORT})" -ForegroundColor Gray
-Write-Host "  3. This validates network connectivity automatically" -ForegroundColor Gray
+Write-Host "To download PDFs:" -ForegroundColor Cyan
+Write-Host "  1. Right-click 'Download-PDFs-from-Kali.ps1' on Desktop" -ForegroundColor Gray
+Write-Host "  2. Select 'Run with PowerShell'" -ForegroundColor Gray
+Write-Host "  3. PDFs will download from Kali (${KALI_IP}:${HTTP_PORT})" -ForegroundColor Gray
 Write-Host
