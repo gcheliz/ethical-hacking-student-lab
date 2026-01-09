@@ -77,58 +77,84 @@ fi
 echo
 
 # ============================================================================
-# STEP 2: Download Adobe Reader (if needed)
+# STEP 2: Extract Adobe Reader from ZIP archive
 # ============================================================================
-echo -e "${YELLOW}[2/8] Checking Adobe Reader installer...${NC}"
+echo -e "${YELLOW}[2/8] Preparing Adobe Reader installer...${NC}"
 
-if [ ! -f "resources/AdobeReader_9.5.exe" ]; then
-    echo "  Downloading Adobe Reader 9.5.0 (this may take a few minutes)..."
-    mkdir -p resources
+ADOBE_PATH="resources/AdobeReader_9.5.exe"
+ADOBE_ZIP="resources/AdobeReader_9.5.zip"
 
-    # Try multiple sources
-    DOWNLOADED=false
+# Ensure resources directory exists
+mkdir -p resources
 
-    # Source 1: Internet Archive
-    if ! $DOWNLOADED; then
-        echo "  Trying Internet Archive..."
-        if wget -q --show-progress \
-            "https://archive.org/download/adobe-reader-9.5/AdbeRdr950_en_US.exe" \
-            -O resources/AdobeReader_9.5.exe 2>/dev/null; then
-            DOWNLOADED=true
-            echo -e "${GREEN}  ✓ Downloaded from Internet Archive${NC}"
+# Check if extracted file already exists
+if [ -f "$ADOBE_PATH" ]; then
+    FILE_SIZE=$(du -m "$ADOBE_PATH" | cut -f1)
+    echo -e "${GREEN}  ✓ Adobe Reader installer ready (${FILE_SIZE}MB)${NC}"
+fi
+
+# If not ready, extract from ZIP
+if [ ! -f "$ADOBE_PATH" ]; then
+    if [ -f "$ADOBE_ZIP" ]; then
+        echo "  Extracting Adobe Reader from ZIP archive..."
+
+        # Create temp directory
+        TEMP_DIR=$(mktemp -d)
+
+        # Extract ZIP
+        if command -v unzip >/dev/null 2>&1; then
+            if unzip -q "$ADOBE_ZIP" -d "$TEMP_DIR"; then
+                # Find the .exe file (could be in subdirectory or with different name)
+                EXTRACTED_EXE=$(find "$TEMP_DIR" -type f -name "*.exe" | head -n 1)
+
+                if [ -n "$EXTRACTED_EXE" ]; then
+                    # Copy to resources with correct name
+                    cp "$EXTRACTED_EXE" "$ADOBE_PATH"
+
+                    # Cleanup temp directory
+                    rm -rf "$TEMP_DIR"
+
+                    # Verify the copied file
+                    FILE_SIZE=$(du -m "$ADOBE_PATH" | cut -f1)
+                    echo -e "${GREEN}  ✓ Extracted successfully (${FILE_SIZE}MB)${NC}"
+                else
+                    echo -e "${RED}✗ No .exe file found in ZIP archive${NC}"
+                    echo ""
+                    echo "The ZIP archive may be empty or corrupted."
+                    echo "Please contact your instructor for the correct AdobeReader_9.5.zip file"
+                    rm -rf "$TEMP_DIR"
+                    exit 1
+                fi
+            else
+                echo -e "${RED}✗ Failed to extract ZIP archive${NC}"
+                rm -rf "$TEMP_DIR"
+                exit 1
+            fi
+        else
+            echo -e "${RED}✗ unzip command not found${NC}"
+            echo "Please install unzip: sudo apt-get install unzip"
+            exit 1
         fi
-    fi
-
-    # Source 2: Alternative mirror
-    if ! $DOWNLOADED; then
-        echo "  Trying alternative source..."
-        if wget -q --show-progress \
-            "https://ardownload2.adobe.com/pub/adobe/reader/win/9.x/9.5.0/en_US/AdbeRdr950_en_US.exe" \
-            -O resources/AdobeReader_9.5.exe 2>/dev/null; then
-            DOWNLOADED=true
-            echo -e "${GREEN}  ✓ Downloaded from Adobe FTP${NC}"
-        fi
-    fi
-
-    if ! $DOWNLOADED; then
-        echo -e "${RED}✗ Failed to download Adobe Reader${NC}"
-        echo "Please manually download from:"
-        echo "  https://archive.org/download/adobe-reader-9.5/AdbeRdr950_en_US.exe"
-        echo "And save to: resources/AdobeReader_9.5.exe"
+    else
+        echo -e "${RED}✗ Adobe Reader ZIP archive not found!${NC}"
+        echo ""
+        echo "The file resources/AdobeReader_9.5.zip is missing."
+        echo ""
+        echo "Required file: resources/AdobeReader_9.5.zip"
+        echo "Please contact your instructor to obtain this file."
+        echo ""
         exit 1
     fi
-else
-    echo -e "${GREEN}  ✓ Adobe Reader installer ready${NC}"
 fi
 
-# Verify file size (should be around 50MB)
-FILE_SIZE=$(du -m resources/AdobeReader_9.5.exe | cut -f1)
-if [ "$FILE_SIZE" -lt 40 ]; then
-    echo -e "${RED}✗ Adobe Reader file seems incomplete (${FILE_SIZE}MB)${NC}"
-    rm resources/AdobeReader_9.5.exe
+# Final verification
+if [ -f "$ADOBE_PATH" ]; then
+    FILE_SIZE=$(du -m "$ADOBE_PATH" | cut -f1)
+    echo -e "${GREEN}  ✓ File verified (${FILE_SIZE}MB)${NC}"
+else
+    echo -e "${RED}✗ Adobe Reader installer not found after extraction${NC}"
     exit 1
 fi
-echo -e "${GREEN}  ✓ File verified (${FILE_SIZE}MB)${NC}"
 
 echo
 

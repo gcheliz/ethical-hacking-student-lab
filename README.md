@@ -29,8 +29,8 @@ This repository provides a **fully automated, local ethical hacking lab** that d
 **For Windows (PowerShell):**
 ```powershell
 # Clone the repository
-git clone https://github.com/your-org/ethical-hacking-pdf-lab.git
-cd ethical-hacking-pdf-lab
+git clone https://github.com/gcheliz/ethical-hacking-student-lab.git
+cd ethical-hacking-student-lab
 
 # Run automated setup (15-30 minutes)
 .\setup.ps1
@@ -39,8 +39,8 @@ cd ethical-hacking-pdf-lab
 **For Linux/macOS (Bash):**
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/ethical-hacking-pdf-lab.git
-cd ethical-hacking-pdf-lab
+git clone https://github.com/gcheliz/ethical-hacking-student-lab.git
+cd ethical-hacking-student-lab
 
 # Run automated setup (15-30 minutes)
 ./setup.sh
@@ -134,8 +134,8 @@ cd /vagrant/exploits
 ### Step 2: Clone Repository
 
 ```bash
-git clone https://github.com/your-org/ethical-hacking-pdf-lab.git
-cd ethical-hacking-pdf-lab
+git clone https://github.com/gcheliz/ethical-hacking-student-lab.git
+cd ethical-hacking-student-lab
 ```
 
 ### Step 3: Run Setup Script

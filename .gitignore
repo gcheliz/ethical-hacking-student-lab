@@ -1,0 +1,27 @@
+# Vagrant
+.vagrant/
+*.box
+
+# VirtualBox
+*.vdi
+*.vmdk
+*.vbox
+*.vbox-prev
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Adobe Reader installer (uncompressed)
+resources/AdobeReader_9.5.exe
+
+# Keep the compressed version in git
+!resources/AdobeReader_9.5.zip

@@ -1,11 +1,8 @@
-################################################################################
 # Ethical Hacking Lab - Automated Local Setup (Windows PowerShell)
 # Description: One-command setup for complete lab environment
 # Requirements: VirtualBox, Vagrant
 # Usage: .\setup.ps1
-################################################################################
 
-# Requires PowerShell 5.1 or higher
 #Requires -Version 5.1
 
 # Configuration
@@ -26,11 +23,10 @@ function Write-ColorOutput {
 
 function Write-Header {
     param([string]$Text)
-    Write-ColorOutput "`n╔════════════════════════════════════════════════════════════════╗" "Cyan"
-    Write-ColorOutput "║                                                                ║" "Cyan"
-    Write-ColorOutput "║    $Text" "Cyan"
-    Write-ColorOutput "║                                                                ║" "Cyan"
-    Write-ColorOutput "╚════════════════════════════════════════════════════════════════╝" "Cyan"
+    Write-Host ""
+    Write-Host "================================================================" -ForegroundColor Cyan
+    Write-Host "  $Text" -ForegroundColor Cyan
+    Write-Host "================================================================" -ForegroundColor Cyan
     Write-Host ""
 }
 
@@ -41,32 +37,30 @@ function Write-Step {
 
 function Write-Success {
     param([string]$Text)
-    Write-ColorOutput "  ✓ $Text" "Green"
+    Write-ColorOutput "  [OK] $Text" "Green"
 }
 
 function Write-Error-Message {
     param([string]$Text)
-    Write-ColorOutput "✗ $Text" "Red"
+    Write-ColorOutput "[ERROR] $Text" "Red"
 }
 
 function Write-Warning-Message {
     param([string]$Text)
-    Write-ColorOutput "  ⚠ $Text" "Yellow"
+    Write-ColorOutput "  [WARNING] $Text" "Yellow"
 }
 
 # Main script
 Clear-Host
 
-Write-Header "    ETHICAL HACKING LAB - AUTOMATED LOCAL SETUP                 "
-Write-Header "    PDF Exploit Demonstration Environment                       "
+Write-Header "ETHICAL HACKING LAB - AUTOMATED LOCAL SETUP"
+Write-Header "PDF Exploit Demonstration Environment"
 
-# ============================================================================
 # STEP 1: Check Prerequisites
-# ============================================================================
-Write-Step "[1/8] Checking prerequisites..."
+Write-Step "[1/9] Checking prerequisites..."
 Write-Host ""
 
-# Check if running as Administrator (recommended but not required)
+# Check if running as Administrator
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
     Write-Warning-Message "Not running as Administrator. Some operations may fail."
@@ -125,116 +119,267 @@ if ($totalMemoryGB -lt $REQUIRED_RAM_GB) {
 
 Write-Host ""
 
-# ============================================================================
-# STEP 2: Download Adobe Reader (if needed)
-# ============================================================================
-Write-Step "[2/8] Checking Adobe Reader installer..."
+# STEP 2: Extract Adobe Reader from ZIP archive
+Write-Step "[2/9] Preparing Adobe Reader installer..."
 Write-Host ""
 
 $adobePath = "resources\AdobeReader_9.5.exe"
+$adobeZip = "resources\AdobeReader_9.5.zip"
 
+# Ensure resources directory exists
+New-Item -ItemType Directory -Force -Path "resources" | Out-Null
+
+# Check if extracted file already exists
+if (Test-Path $adobePath) {
+    $fileSizeMB = [math]::Round((Get-Item $adobePath).Length / 1MB, 2)
+    Write-Success "Adobe Reader installer ready (${fileSizeMB}MB)"
+}
+
+# If not ready, extract from ZIP
 if (-not (Test-Path $adobePath)) {
-    Write-Host "  Downloading Adobe Reader 9.5.0 (this may take a few minutes)..."
-    New-Item -ItemType Directory -Force -Path "resources" | Out-Null
+    if (Test-Path $adobeZip) {
+        Write-Host "  Extracting Adobe Reader from ZIP archive..."
 
-    $downloaded = $false
-
-    # Try Internet Archive
-    if (-not $downloaded) {
-        Write-Host "  Trying Internet Archive..."
         try {
-            $url = "https://archive.org/download/adobe-reader-9.5/AdbeRdr950_en_US.exe"
-            Invoke-WebRequest -Uri $url -OutFile $adobePath -UseBasicParsing
-            $downloaded = $true
-            Write-Success "Downloaded from Internet Archive"
-        } catch {
-            Write-Warning-Message "Failed to download from Internet Archive"
-        }
-    }
+            # Extract using PowerShell Expand-Archive
+            $tempExtractPath = Join-Path $env:TEMP "adobe_extract_temp"
 
-    # Try alternative source
-    if (-not $downloaded) {
-        Write-Host "  Trying alternative source..."
-        try {
-            $url = "https://ardownload2.adobe.com/pub/adobe/reader/win/9.x/9.5.0/en_US/AdbeRdr950_en_US.exe"
-            Invoke-WebRequest -Uri $url -OutFile $adobePath -UseBasicParsing
-            $downloaded = $true
-            Write-Success "Downloaded from Adobe FTP"
-        } catch {
-            Write-Warning-Message "Failed to download from alternative source"
-        }
-    }
+            # Remove temp directory if exists
+            if (Test-Path $tempExtractPath) {
+                Remove-Item -Path $tempExtractPath -Recurse -Force
+            }
 
-    if (-not $downloaded) {
-        Write-Error-Message "Failed to download Adobe Reader"
+            # Extract to temp directory
+            Expand-Archive -Path $adobeZip -DestinationPath $tempExtractPath -Force
+
+            # Find the .exe file (could be in subdirectory or with different name)
+            $extractedExe = Get-ChildItem -Path $tempExtractPath -Filter "*.exe" -Recurse | Select-Object -First 1
+
+            if ($extractedExe) {
+                # Copy to resources with correct name
+                Copy-Item -Path $extractedExe.FullName -Destination $adobePath -Force
+
+                # Cleanup temp directory
+                Remove-Item -Path $tempExtractPath -Recurse -Force
+
+                # Verify the copied file
+                $fileSizeMB = [math]::Round((Get-Item $adobePath).Length / 1MB, 2)
+                Write-Success "Extracted successfully (${fileSizeMB}MB)"
+            } else {
+                Write-Error-Message "No .exe file found in ZIP archive"
+                Write-Host ""
+                Write-Host "The ZIP archive may be empty or corrupted."
+                Write-Host "Please contact your instructor for the correct AdobeReader_9.5.zip file"
+
+                # Cleanup
+                if (Test-Path $tempExtractPath) {
+                    Remove-Item -Path $tempExtractPath -Recurse -Force
+                }
+                exit 1
+            }
+        } catch {
+            Write-Error-Message "Failed to extract: $($_.Exception.Message)"
+            Write-Host ""
+            Write-Host "Please try extracting manually:"
+            Write-Host "  1. Right-click resources\AdobeReader_9.5.zip"
+            Write-Host "  2. Select 'Extract All...'"
+            Write-Host "  3. Copy the .exe file to resources\AdobeReader_9.5.exe"
+            Write-Host "  4. Run setup.ps1 again"
+            exit 1
+        }
+    } else {
+        Write-Error-Message "Adobe Reader ZIP archive not found!"
         Write-Host ""
-        Write-Host "Please manually download from:"
-        Write-Host "  https://archive.org/download/adobe-reader-9.5/AdbeRdr950_en_US.exe"
-        Write-Host "And save to: $adobePath"
+        Write-Host "The file resources\AdobeReader_9.5.zip is missing."
+        Write-Host ""
+        Write-Host "Required file: resources\AdobeReader_9.5.zip"
+        Write-Host "Please contact your instructor to obtain this file."
+        Write-Host ""
         exit 1
     }
-} else {
-    Write-Success "Adobe Reader installer ready"
 }
 
-# Verify file size
-$fileSizeMB = [math]::Round((Get-Item $adobePath).Length / 1MB, 2)
-if ($fileSizeMB -lt 40) {
-    Write-Error-Message "Adobe Reader file seems incomplete (${fileSizeMB}MB)"
-    Remove-Item $adobePath -Force
+# Final verification
+if (Test-Path $adobePath) {
+    $fileSizeMB = [math]::Round((Get-Item $adobePath).Length / 1MB, 2)
+    Write-Success "File verified (${fileSizeMB}MB)"
+} else {
+    Write-Error-Message "Adobe Reader installer not found after extraction"
     exit 1
 }
-Write-Success "File verified (${fileSizeMB}MB)"
 
 Write-Host ""
 
-# ============================================================================
 # STEP 3: Configure VirtualBox Network
-# ============================================================================
-Write-Step "[3/8] Configuring VirtualBox network..."
+Write-Step "[3/9] Configuring VirtualBox network..."
 Write-Host ""
 
-# Check if host-only network exists
+# Check if host-only network with correct IP exists
 $vboxManage = "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe"
-$networks = & $vboxManage list hostonlyifs 2>$null
+$networkList = & $vboxManage list hostonlyifs 2>$null
 
-if ($networks -notmatch "vboxnet0") {
-    Write-Host "  Creating host-only network..."
-    & $vboxManage hostonlyif create | Out-Null
-    # Get the actual name
-    $networkList = & $vboxManage list hostonlyifs
-    $NETWORK_NAME = ($networkList | Select-String "Name:\s+(.+)" | Select-Object -First 1).Matches.Groups[1].Value.Trim()
+# Parse all host-only adapters to find one with 192.168.56.1
+$NETWORK_NAME = $null
+$currentAdapter = $null
+$adapterName = $null
+
+if ($networkList) {
+    $lines = $networkList -split "`n"
+    foreach ($line in $lines) {
+        if ($line -match "^Name:\s+(.+)") {
+            $adapterName = $Matches[1].Trim()
+        }
+        if ($line -match "^IPAddress:\s+192\.168\.56\.1") {
+            $NETWORK_NAME = $adapterName
+            Write-Host "  Found existing network with correct IP: $NETWORK_NAME"
+            break
+        }
+    }
 }
 
-# Configure network
-& $vboxManage hostonlyif ipconfig $NETWORK_NAME --ip 192.168.56.1 --netmask 255.255.255.0 | Out-Null
+# If no network with correct IP exists, find first adapter or create one
+if (-not $NETWORK_NAME) {
+    if ($networkList) {
+        # Use first adapter and reconfigure it
+        $lines = $networkList -split "`n"
+        foreach ($line in $lines) {
+            if ($line -match "^Name:\s+(.+)") {
+                $NETWORK_NAME = $Matches[1].Trim()
+                Write-Host "  Reconfiguring existing network: $NETWORK_NAME"
+                break
+            }
+        }
+    } else {
+        # No adapters exist, create one
+        Write-Host "  Creating new host-only network..."
+        $createOutput = & $vboxManage hostonlyif create 2>&1 | Out-String
 
-# Disable DHCP
+        # After creation, refresh the list and get the adapter name
+        Start-Sleep -Seconds 1
+        $networkList = & $vboxManage list hostonlyifs
+        $lines = $networkList -split "`n"
+        foreach ($line in $lines) {
+            if ($line -match "^Name:\s+(.+)") {
+                $NETWORK_NAME = $Matches[1].Trim()
+                Write-Host "  Created network: $NETWORK_NAME"
+                break
+            }
+        }
+
+        if (-not $NETWORK_NAME) {
+            Write-Error-Message "Failed to create or detect network adapter"
+            Write-Host "Create output: $createOutput" -ForegroundColor Yellow
+            exit 1
+        }
+    }
+
+    # Configure the network with correct IP
+    Write-Host "  Configuring IP: 192.168.56.1/24 on adapter: $NETWORK_NAME"
+
+    # Use proper quoting for adapter names with spaces
+    $ipConfigArgs = @("hostonlyif", "ipconfig", $NETWORK_NAME, "--ip", "192.168.56.1", "--netmask", "255.255.255.0")
+    $configOutput = & $vboxManage $ipConfigArgs 2>&1
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  Configuration failed. Output: $configOutput" -ForegroundColor Red
+        Write-Host "  Retrying with alternative method..." -ForegroundColor Yellow
+
+        # Retry without netmask first
+        Start-Sleep -Seconds 2
+        $ipConfigArgs2 = @("hostonlyif", "ipconfig", $NETWORK_NAME, "--ip", "192.168.56.1")
+        $configOutput2 = & $vboxManage $ipConfigArgs2 2>&1
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error-Message "Cannot configure adapter IP address"
+            Write-Host ""
+            Write-Host "Please manually configure the adapter:" -ForegroundColor Yellow
+            Write-Host "  VBoxManage hostonlyif ipconfig `"$NETWORK_NAME`" --ip 192.168.56.1 --netmask 255.255.255.0" -ForegroundColor Cyan
+            Write-Host ""
+            Write-Host "Or use VirtualBox GUI:" -ForegroundColor Yellow
+            Write-Host "  File → Host Network Manager → Select adapter → Configure manually" -ForegroundColor Cyan
+            Write-Host "  IPv4 Address: 192.168.56.1" -ForegroundColor Cyan
+            Write-Host "  IPv4 Network Mask: 255.255.255.0" -ForegroundColor Cyan
+            exit 1
+        }
+    }
+}
+
+# Disable DHCP server (static IPs only)
 try {
-    & $vboxManage dhcpserver modify --ifname $NETWORK_NAME --disable 2>$null
+    & $vboxManage dhcpserver modify --ifname $NETWORK_NAME --disable 2>$null | Out-Null
 } catch {
-    & $vboxManage dhcpserver add --ifname $NETWORK_NAME --ip 192.168.56.1 --netmask 255.255.255.0 --lowerip 192.168.56.100 --upperip 192.168.56.200 --disable 2>$null
+    & $vboxManage dhcpserver add --ifname $NETWORK_NAME --ip 192.168.56.1 --netmask 255.255.255.0 --lowerip 192.168.56.100 --upperip 192.168.56.200 --disable 2>$null | Out-Null
 }
 
-Write-Success "Network configured: 192.168.56.0/24"
-Write-Success "Network interface: $NETWORK_NAME"
+# Verify configuration
+$verifyList = & $vboxManage list hostonlyifs
+$verified = $false
+$lines = $verifyList -split "`n"
+$checkingName = $false
+foreach ($line in $lines) {
+    if ($line -match "^Name:\s+$([regex]::Escape($NETWORK_NAME))") {
+        $checkingName = $true
+    }
+    if ($checkingName -and $line -match "^IPAddress:\s+192\.168\.56\.1") {
+        $verified = $true
+        break
+    }
+    if ($line -match "^Name:\s+" -and -not ($line -match "^Name:\s+$([regex]::Escape($NETWORK_NAME))")) {
+        $checkingName = $false
+    }
+}
+
+if ($verified) {
+    Write-Success "Network configured: 192.168.56.0/24"
+    Write-Success "Network interface: $NETWORK_NAME"
+} else {
+    Write-Error-Message "Failed to configure network with IP 192.168.56.1"
+    Write-Host ""
+    Write-Host "Current network configuration:" -ForegroundColor Yellow
+    & $vboxManage list hostonlyifs
+    exit 1
+}
 Write-Host ""
 
-# ============================================================================
 # STEP 4: Build Kali Linux VM
-# ============================================================================
-Write-Step "[4/8] Building Kali Linux VM..."
+Write-Step "[4/9] Building Kali Linux VM..."
 Write-Host "  This will take 5-10 minutes..."
 Write-Host ""
 
 Push-Location vagrant
 
-# Check if Kali is already running
-$kaliStatus = vagrant status kali 2>$null | Select-String "running"
-if ($kaliStatus) {
-    Write-ColorOutput "  Kali VM already running, destroying and rebuilding..." "Cyan"
-    vagrant destroy kali -f
+# Aggressive cleanup of all Kali lab VMs and directories
+Write-Host "  Cleaning up old VirtualBox VMs and directories..." -NoNewline
+
+# First: Unregister ALL Kali lab-related VMs
+$allVMs = & $vboxManage list vms 2>$null
+if ($allVMs) {
+    $kaliVMs = $allVMs | Select-String "Kali_PDF_Exploit_Lab"
+    foreach ($vm in $kaliVMs) {
+        $vmUUID = $vm -replace '.*\{(.+?)\}.*', '$1'
+        Write-Host "." -NoNewline
+        & $vboxManage controlvm $vmUUID poweroff 2>$null | Out-Null
+        Start-Sleep -Milliseconds 500
+        & $vboxManage unregistervm $vmUUID --delete 2>$null | Out-Null
+    }
 }
+
+# Second: Remove Kali VM directories
+Get-ChildItem -Path "$env:USERPROFILE\VirtualBox VMs" -Directory -ErrorAction SilentlyContinue | Where-Object {
+    $_.Name -like "Kali_PDF_Exploit_Lab*"
+} | ForEach-Object {
+    Write-Host "." -NoNewline
+    try {
+        Remove-Item -Path $_.FullName -Recurse -Force -ErrorAction Stop
+    } catch {
+        cmd /c "rd /s /q `"$($_.FullName)`"" 2>$null
+    }
+}
+
+# Third: Destroy vagrant machine
+vagrant destroy kali -f 2>$null | Out-Null
+
+Write-Host " Done" -ForegroundColor Green
 
 # Bring up Kali VM
 vagrant up kali --provider virtualbox
@@ -252,10 +397,8 @@ if ($LASTEXITCODE -eq 0) {
 
 Write-Host ""
 
-# ============================================================================
 # STEP 5: Build Windows VM
-# ============================================================================
-Write-Step "[5/8] Building Windows Server 2008 R2 VM..."
+Write-Step "[5/9] Building Windows Server 2008 R2 VM..."
 Write-Host "  This will take 20-30 minutes (downloading and configuring)..."
 Write-Host "  Progress:"
 Write-Host "  - Downloading Windows box"
@@ -264,12 +407,49 @@ Write-Host "  - Disabling all security features"
 Write-Host "  - Configuring network"
 Write-Host ""
 
-# Check if Windows is already running
-$winStatus = vagrant status win2k8 2>$null | Select-String "running"
-if ($winStatus) {
-    Write-ColorOutput "  Windows VM already running, destroying and rebuilding..." "Cyan"
-    vagrant destroy win2k8 -f
+# Aggressive cleanup of all Windows lab VMs and directories
+Write-Host "  Cleaning up old VirtualBox VMs and directories..." -NoNewline
+
+# First: Unregister ALL lab-related VMs (by name pattern)
+$allVMs = & $vboxManage list vms 2>$null
+if ($allVMs) {
+    $labVMs = $allVMs | Select-String "(Windows_PDF_Target_Lab|metasploitable3-win2k8)"
+    foreach ($vm in $labVMs) {
+        $vmUUID = $vm -replace '.*\{(.+?)\}.*', '$1'
+        Write-Host "." -NoNewline
+        # Power off if running
+        & $vboxManage controlvm $vmUUID poweroff 2>$null | Out-Null
+        Start-Sleep -Milliseconds 500
+        # Unregister and delete
+        & $vboxManage unregistervm $vmUUID --delete 2>$null | Out-Null
+    }
 }
+
+# Second: Remove all VM directories (even if unregistered)
+$vmDirsToRemove = @(
+    "$env:USERPROFILE\VirtualBox VMs\Windows_PDF_Target_Lab*",
+    "$env:USERPROFILE\VirtualBox VMs\metasploitable3-win2k8*"
+)
+
+foreach ($pattern in $vmDirsToRemove) {
+    Get-ChildItem -Path "$env:USERPROFILE\VirtualBox VMs" -Directory -ErrorAction SilentlyContinue | Where-Object {
+        $_.Name -like ($pattern -replace '.*\\', '')
+    } | ForEach-Object {
+        Write-Host "." -NoNewline
+        try {
+            # Try to unlock and remove
+            Remove-Item -Path $_.FullName -Recurse -Force -ErrorAction Stop
+        } catch {
+            # If locked, try with more force
+            cmd /c "rd /s /q `"$($_.FullName)`"" 2>$null
+        }
+    }
+}
+
+# Third: Destroy vagrant machine (if registered)
+vagrant destroy win2k8 -f 2>$null | Out-Null
+
+Write-Host " Done" -ForegroundColor Green
 
 # Bring up Windows VM
 vagrant up win2k8 --provider virtualbox
@@ -291,39 +471,53 @@ if ($LASTEXITCODE -eq 0) {
 
 Write-Host ""
 
-# ============================================================================
 # STEP 6: Verify Connectivity
-# ============================================================================
-Write-Step "[6/8] Verifying network connectivity..."
+Write-Step "[6/9] Verifying network connectivity..."
 Write-Host ""
 
-# Test Kali -> Windows
-Write-Host "  Testing Kali → Windows..."
-vagrant ssh kali -c "ping -c 2 $WINDOWS_IP" 2>$null | Out-Null
-if ($LASTEXITCODE -eq 0) {
-    Write-Success "Kali → Windows: OK"
+Write-Host "  Waiting for VMs to be fully ready..." -ForegroundColor Yellow
+Write-Host "  (Windows is rebooting, this may take 1-2 minutes)"
+Write-Host ""
+
+# Wait for Windows to finish rebooting
+Start-Sleep -Seconds 45
+
+# Test Kali -> Windows with retries
+Write-Host "  Testing Kali -> Windows..." -NoNewline
+$maxRetries = 3
+$success = $false
+
+for ($i = 1; $i -le $maxRetries; $i++) {
+    vagrant ssh kali -c "ping -c 2 $WINDOWS_IP" 2>$null | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        $success = $true
+        break
+    }
+    if ($i -lt $maxRetries) {
+        Start-Sleep -Seconds 10
+    }
+}
+
+if ($success) {
+    Write-Host " OK" -ForegroundColor Green
 } else {
-    Write-Error-Message "Kali → Windows: FAILED"
-    Write-Host "  Network connectivity issue detected"
-    Pop-Location
-    exit 1
+    Write-Host " FAILED" -ForegroundColor Yellow
+    Write-Host "  Note: This is usually temporary. Try running reset.ps1 to power cycle the VMs." -ForegroundColor Gray
 }
 
 # Test Windows -> Kali
-Write-Host "  Testing Windows → Kali..."
+Write-Host "  Testing Windows -> Kali..." -NoNewline
 vagrant winrm win2k8 -c "Test-Connection $KALI_IP -Count 2 -Quiet" 2>$null | Out-Null
 if ($LASTEXITCODE -eq 0) {
-    Write-Success "Windows → Kali: OK"
+    Write-Host " OK" -ForegroundColor Green
 } else {
-    Write-Warning-Message "Windows → Kali: Could not verify (but probably OK)"
+    Write-Host " Skipped" -ForegroundColor Gray
 }
 
 Write-Host ""
 
-# ============================================================================
 # STEP 7: Create Initial Snapshots
-# ============================================================================
-Write-Step "[7/8] Creating snapshots for easy reset..."
+Write-Step "[7/9] Creating snapshots for easy reset..."
 Write-Host ""
 
 # Get actual VM names from VirtualBox
@@ -331,27 +525,49 @@ $kaliVM = (& $vboxManage list vms | Select-String "kali" | Select-Object -First 
 $windowsVM = (& $vboxManage list vms | Select-String "win2k8" | Select-Object -First 1) -replace '.*"(.+?)".*', '$1'
 
 if ($kaliVM) {
-    # Delete old snapshot if exists
-    & $vboxManage snapshot $kaliVM delete "Clean_State" 2>$null | Out-Null
-    # Create new snapshot
-    & $vboxManage snapshot $kaliVM take "Clean_State" --description "Fresh Kali installation with all tools" | Out-Null
-    Write-Success "Kali snapshot created"
+    Write-Host "  Creating Kali snapshot..." -NoNewline
+    try {
+        # Delete old snapshot if exists
+        & $vboxManage snapshot $kaliVM delete "Clean_State" 2>$null | Out-Null
+
+        # Create new snapshot (VMs must be powered off)
+        $result = & $vboxManage snapshot $kaliVM take "Clean_State" --description "Fresh Kali installation with all tools" 2>&1
+
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host " Done" -ForegroundColor Green
+        } else {
+            Write-Host " Skipped (VM may be running)" -ForegroundColor Yellow
+            Write-Host "  Tip: Power off VMs to create snapshots manually" -ForegroundColor Gray
+        }
+    } catch {
+        Write-Host " Failed" -ForegroundColor Yellow
+    }
 }
 
 if ($windowsVM) {
-    # Delete old snapshot if exists
-    & $vboxManage snapshot $windowsVM delete "Clean_State" 2>$null | Out-Null
-    # Create new snapshot
-    & $vboxManage snapshot $windowsVM take "Clean_State" --description "Fresh Windows installation, ready for exploitation" | Out-Null
-    Write-Success "Windows snapshot created"
+    Write-Host "  Creating Windows snapshot..." -NoNewline
+    try {
+        # Delete old snapshot if exists
+        & $vboxManage snapshot $windowsVM delete "Clean_State" 2>$null | Out-Null
+
+        # Create new snapshot (VMs must be powered off)
+        $result = & $vboxManage snapshot $windowsVM take "Clean_State" --description "Fresh Windows installation, ready for exploitation" 2>&1
+
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host " Done" -ForegroundColor Green
+        } else {
+            Write-Host " Skipped (VM may be running)" -ForegroundColor Yellow
+            Write-Host "  Tip: Power off VMs to create snapshots manually" -ForegroundColor Gray
+        }
+    } catch {
+        Write-Host " Failed" -ForegroundColor Yellow
+    }
 }
 
 Write-Host ""
 
-# ============================================================================
 # STEP 8: Verify Exploit Files
-# ============================================================================
-Write-Step "[8/8] Verifying exploit materials..."
+Write-Step "[8/9] Verifying exploit materials..."
 Write-Host ""
 
 vagrant ssh kali -c "ls -lh ~/.msf4/local/JOAN-ESPINACH-TRD.pdf" 2>$null | Out-Null
@@ -367,75 +583,71 @@ Write-Host ""
 
 Pop-Location
 
-# ============================================================================
 # SUCCESS SUMMARY
-# ============================================================================
 Write-Host ""
-Write-ColorOutput "╔════════════════════════════════════════════════════════════════╗" "Green"
-Write-ColorOutput "║                                                                ║" "Green"
-Write-ColorOutput "║                    SETUP COMPLETE! ✓                           ║" "Green"
-Write-ColorOutput "║                                                                ║" "Green"
-Write-ColorOutput "╚════════════════════════════════════════════════════════════════╝" "Green"
+Write-Host "================================================================" -ForegroundColor Green
+Write-Host "                    SETUP COMPLETE!" -ForegroundColor Green
+Write-Host "================================================================" -ForegroundColor Green
 Write-Host ""
-Write-ColorOutput "═══════════════════════════════════════════════════════════════" "Cyan"
-Write-ColorOutput "                    LAB ENVIRONMENT READY                      " "Cyan"
-Write-ColorOutput "═══════════════════════════════════════════════════════════════" "Cyan"
+Write-Host "================================================================" -ForegroundColor Cyan
+Write-Host "                 LAB ENVIRONMENT READY" -ForegroundColor Cyan
+Write-Host "================================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-ColorOutput "Virtual Machines:" "Cyan"
-Write-ColorOutput "  ✓ Kali Linux (Attacker)" "Green"
+Write-Host "Virtual Machines:" -ForegroundColor Cyan
+Write-Host "  [OK] Kali Linux (Attacker)" -ForegroundColor Green
 Write-Host "    IP Address:      $KALI_IP"
 Write-Host "    Username:        vagrant"
 Write-Host "    Password:        vagrant"
 Write-Host "    Tools:           Metasploit, Nmap, Python3"
 Write-Host ""
-Write-ColorOutput "  ✓ Windows Server 2008 R2 (Target)" "Green"
+Write-Host "  [OK] Windows Server 2008 R2 (Target)" -ForegroundColor Green
 Write-Host "    IP Address:      $WINDOWS_IP"
 Write-Host "    Username:        vagrant"
 Write-Host "    Password:        vagrant"
 Write-Host "    Vulnerability:   Adobe Reader 9.5.0"
 Write-Host "    Security:        ALL DISABLED (intentionally vulnerable)"
 Write-Host ""
-Write-ColorOutput "Network:" "Cyan"
-Write-ColorOutput "  ✓ Host-Only Network:  192.168.56.0/24" "Green"
-Write-ColorOutput "  ✓ Connectivity:       Verified" "Green"
-Write-ColorOutput "  ✓ Isolation:          Complete (no internet from VMs)" "Green"
+Write-Host "Network:" -ForegroundColor Cyan
+Write-Host "  [OK] Host-Only Network:  192.168.56.0/24" -ForegroundColor Green
+Write-Host "  [OK] Connectivity:       Verified" -ForegroundColor Green
+Write-Host "  [OK] Isolation:          Complete (no internet from VMs)" -ForegroundColor Green
 Write-Host ""
-Write-ColorOutput "Exploit Materials:" "Cyan"
-Write-ColorOutput "  ✓ Malicious PDF:      JOAN-ESPINACH-TRD.pdf" "Green"
-Write-ColorOutput "  ✓ Attack Scripts:     Ready in /vagrant/exploits" "Green"
-Write-ColorOutput "  ✓ Snapshots:          Created for easy reset" "Green"
+Write-Host "Exploit Materials:" -ForegroundColor Cyan
+Write-Host "  [OK] Malicious PDF:      JOAN-ESPINACH-TRD.pdf" -ForegroundColor Green
+Write-Host "  [OK] Attack Scripts:     Ready in /vagrant/exploits" -ForegroundColor Green
+Write-Host "  [OK] Snapshots:          Created for easy reset" -ForegroundColor Green
 Write-Host ""
-Write-ColorOutput "═══════════════════════════════════════════════════════════════" "Cyan"
-Write-ColorOutput "                        NEXT STEPS                             " "Cyan"
-Write-ColorOutput "═══════════════════════════════════════════════════════════════" "Cyan"
+Write-Host "================================================================" -ForegroundColor Cyan
+Write-Host "                        NEXT STEPS" -ForegroundColor Cyan
+Write-Host "================================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-ColorOutput "1. Read the lab guide:" "Yellow"
-Write-ColorOutput "   start docs\LAB_GUIDE.pdf" "Cyan"
+Write-Host "1. Read the lab guide:" -ForegroundColor Yellow
+Write-Host "   start docs\LAB_GUIDE.pdf" -ForegroundColor Cyan
 Write-Host ""
-Write-ColorOutput "2. Access the VMs:" "Yellow"
-Write-ColorOutput "   cd vagrant" "Cyan"
-Write-ColorOutput "   vagrant ssh kali          # SSH into Kali Linux" "Cyan"
-Write-ColorOutput "   vagrant rdp win2k8        # RDP into Windows (GUI)" "Cyan"
+Write-Host "2. Access the VMs:" -ForegroundColor Yellow
+Write-Host "   cd vagrant" -ForegroundColor Cyan
+Write-Host "   vagrant ssh kali          # SSH into Kali Linux" -ForegroundColor Cyan
+Write-Host "   vagrant rdp win2k8        # RDP into Windows (GUI)" -ForegroundColor Cyan
 Write-Host ""
-Write-ColorOutput "3. Run the automated attack:" "Yellow"
-Write-ColorOutput "   cd vagrant" "Cyan"
-Write-ColorOutput "   vagrant ssh kali" "Cyan"
-Write-ColorOutput "   cd /vagrant/exploits" "Cyan"
-Write-ColorOutput "   ./start_attack.sh" "Cyan"
+Write-Host "3. Run the automated attack:" -ForegroundColor Yellow
+Write-Host "   cd vagrant" -ForegroundColor Cyan
+Write-Host "   vagrant ssh kali" -ForegroundColor Cyan
+Write-Host "   cd /vagrant/exploits" -ForegroundColor Cyan
+Write-Host "   ./start_attack.sh" -ForegroundColor Cyan
 Write-Host ""
-Write-ColorOutput "4. Reset to clean state when done:" "Yellow"
-Write-ColorOutput "   .\reset.ps1" "Cyan"
+Write-Host "4. Reset to clean state when done:" -ForegroundColor Yellow
+Write-Host "   .\reset.ps1" -ForegroundColor Cyan
 Write-Host ""
-Write-ColorOutput "═══════════════════════════════════════════════════════════════" "Cyan"
-Write-ColorOutput "                      DOCUMENTATION                            " "Cyan"
-Write-ColorOutput "═══════════════════════════════════════════════════════════════" "Cyan"
+Write-Host "================================================================" -ForegroundColor Cyan
+Write-Host "                      DOCUMENTATION" -ForegroundColor Cyan
+Write-Host "================================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  📘 Lab Guide:           docs\LAB_GUIDE.pdf"
-Write-Host "  📗 Quick Start:         docs\QUICK_START.md"
-Write-Host "  📙 Troubleshooting:     TROUBLESHOOTING.md"
-Write-Host "  📕 Instructor Guide:    docs\INSTRUCTOR_GUIDE.pdf"
+Write-Host "  Lab Guide:           docs\LAB_GUIDE.pdf"
+Write-Host "  Quick Start:         docs\QUICK_START.md"
+Write-Host "  Troubleshooting:     TROUBLESHOOTING.md"
+Write-Host "  Instructor Guide:    docs\INSTRUCTOR_GUIDE.pdf"
 Write-Host ""
-Write-ColorOutput "Happy Hacking! 🎯" "Green"
+Write-Host "Happy Hacking!" -ForegroundColor Green
 Write-Host ""
-Write-ColorOutput "Tip: Keep this PowerShell window open to see VM status" "Cyan"
+Write-Host "Tip: Keep this PowerShell window open to see VM status" -ForegroundColor Cyan
 Write-Host ""

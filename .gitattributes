@@ -1,0 +1,21 @@
+# Ensure shell scripts always use LF (Unix) line endings
+*.sh text eol=lf
+
+# Ensure PowerShell scripts use CRLF on checkout
+*.ps1 text eol=crlf
+
+# Ensure other text files use native line endings
+*.md text
+*.txt text
+*.yml text
+*.yaml text
+
+# Ensure binary files are not modified
+*.exe binary
+*.zip binary
+*.gz binary
+*.tar binary
+*.box binary
+*.vdi binary
+*.vmdk binary
+*.iso binary
