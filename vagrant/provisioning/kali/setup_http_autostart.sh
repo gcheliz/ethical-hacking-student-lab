@@ -19,7 +19,7 @@ SERVICE_NAME="lnk-http-server"
 # ============================================================================
 # Create systemd service file
 # ============================================================================
-echo "[1/3] Creating systemd service..."
+echo "[1/2] Creating systemd service..."
 
 sudo tee /etc/systemd/system/${SERVICE_NAME}.service > /dev/null << EOF
 [Unit]
@@ -50,57 +50,35 @@ echo "✓ Service file created: /etc/systemd/system/${SERVICE_NAME}.service"
 echo
 
 # ============================================================================
-# Enable and start service
+# Enable service (don't start during provisioning)
 # ============================================================================
-echo "[2/3] Enabling service..."
+echo "[2/2] Enabling service for automatic startup on boot..."
 
 # Reload systemd
 sudo systemctl daemon-reload
 
-# Enable service to start on boot
+# Enable service to start on boot (don't start now to avoid timeout)
 sudo systemctl enable ${SERVICE_NAME}.service
 
-# Start service now
-sudo systemctl start ${SERVICE_NAME}.service
-
-echo "✓ Service enabled and started"
+echo "✓ Service enabled"
 echo
-
-# ============================================================================
-# Verify service is running
-# ============================================================================
-echo "[3/3] Verifying service..."
-
-# Wait a moment for service to start
-sleep 2
-
-# Check service status
-if sudo systemctl is-active --quiet ${SERVICE_NAME}.service; then
-    echo "✓ HTTP server is running on port ${HTTP_PORT}"
-
-    # Get service status
-    sudo systemctl status ${SERVICE_NAME}.service --no-pager -l | head -10
-
-    echo
-    echo "HTTP server is now accessible at:"
-    echo "  http://192.168.56.101:${HTTP_PORT}/"
-    echo
-    echo "Files being served from:"
-    echo "  ${EXPLOIT_DIR}/"
-    echo
-    echo "Service will start automatically on boot!"
-else
-    echo "✗ HTTP server failed to start"
-    echo
-    echo "Check logs with:"
-    echo "  sudo journalctl -u ${SERVICE_NAME}.service -n 50"
-    exit 1
-fi
+echo "Note: Service will start automatically on next boot"
+echo "      (Not started now to avoid provisioning timeout)"
 
 echo
 echo "=================================="
 echo "HTTP autostart setup complete!"
 echo "=================================="
+echo
+echo "Service details:"
+echo "  Name: ${SERVICE_NAME}"
+echo "  Port: ${HTTP_PORT}"
+echo "  Bind: 192.168.56.101"
+echo "  Directory: ${PAYLOAD_DIR}"
+echo
+echo "The HTTP server will start automatically on boot."
+echo "After reboot, it will be accessible at:"
+echo "  http://192.168.56.101:${HTTP_PORT}/"
 echo
 echo "Useful commands:"
 echo "  sudo systemctl status ${SERVICE_NAME}    # Check status"
