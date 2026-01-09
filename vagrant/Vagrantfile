@@ -10,6 +10,11 @@ Vagrant.configure("2") do |config|
   config.vm.box_check_update = false
   config.vm.boot_timeout = 900  # 15 minutes for slower machines
 
+  # Disable guest additions version check (intentionally using old vulnerable box)
+  if Vagrant.has_plugin?("vagrant-vbguest")
+    config.vbguest.auto_update = false
+  end
+
   # Generate random suffix to prevent VM name conflicts
   random_suffix = rand(100000..999999)
 
