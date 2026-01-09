@@ -6,6 +6,7 @@
 
 EXPECTED_IP="192.168.56.101"
 NETMASK="255.255.255.0"
+GATEWAY="192.168.56.1"
 WINDOWS_IP="192.168.56.102"
 
 echo "════════════════════════════════════════════════════════════════"
@@ -73,6 +74,7 @@ auto $IFACE
 iface $IFACE inet static
     address $EXPECTED_IP
     netmask $NETMASK
+    gateway $GATEWAY
     # Ensure route to exploit network uses this interface
     post-up ip route add 192.168.56.0/24 dev $IFACE || true
 EOF
@@ -93,6 +95,7 @@ sudo ifup $IFACE 2>/dev/null || {
     echo "  ifup failed, using ip commands..."
     sudo ip link set $IFACE up
     sudo ip addr add $EXPECTED_IP/24 dev $IFACE
+    sudo ip route add default via $GATEWAY dev $IFACE 2>/dev/null || true
     sudo ip route add 192.168.56.0/24 dev $IFACE 2>/dev/null || true
 }
 
@@ -153,6 +156,7 @@ echo "════════════════════════�
 echo
 echo "  Interface:  $IFACE (host-only adapter)"
 echo "  Kali IP:    $EXPECTED_IP"
+echo "  Gateway:    $GATEWAY"
 echo "  Windows IP: $WINDOWS_IP (target)"
 echo
 echo "  NAT adapter: Used only for Vagrant management (SSH)"
