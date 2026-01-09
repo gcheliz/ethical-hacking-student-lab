@@ -91,7 +91,7 @@ try {
         $tcpClient.Close()
         Write-Host " WARNING" -ForegroundColor Yellow
         Write-Host "    No listener on Kali:$LISTEN_PORT" -ForegroundColor Yellow
-        Write-Host "    This is OK if Metasploit listener hasn't started yet" -ForegroundColor Yellow
+        Write-Host "    This is OK if Metasploit listener has not started yet" -ForegroundColor Yellow
         Write-Host ""
         Write-Host "    To start listener on Kali, run:" -ForegroundColor Yellow
         Write-Host "      vagrant ssh kali" -ForegroundColor Gray
