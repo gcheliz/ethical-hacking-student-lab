@@ -176,6 +176,40 @@ ip addr show | grep 192.168.56.101
 
 ---
 
+### Issue: "HTTP server not responding" during Windows boot
+
+**Symptoms:**
+- During initial setup or reboot, Windows shows "HTTP server not responding"
+- Test shows WARNING instead of SUCCESS
+
+**This is Normal:**
+- The HTTP server starts automatically on Kali via systemd service
+- It may take 10-30 seconds after boot for the service to be fully ready
+- Windows connectivity test will retry for up to 30 seconds
+- If it still shows WARNING, the server will be ready shortly after boot completes
+
+**Verify HTTP server is running:**
+```bash
+# SSH into Kali
+vagrant ssh kali
+
+# Check service status
+sudo systemctl status lnk-http-server.service
+
+# Should show: Active: active (running)
+```
+
+**If service is not running:**
+```bash
+# Start the service
+sudo systemctl start lnk-http-server.service
+
+# Check for errors
+sudo journalctl -u lnk-http-server.service -n 50
+```
+
+---
+
 ### Issue: Windows can't reach HTTP server
 
 **Symptoms:**
@@ -194,7 +228,13 @@ Invoke-WebRequest http://192.168.56.101:8080/shell.ps1
 # On Kali, verify HTTP server is running
 ss -tuln | grep 8080
 
-# If not running, start it
+# Check systemd service status
+sudo systemctl status lnk-http-server.service
+
+# If not running, start the service
+sudo systemctl start lnk-http-server.service
+
+# Or start manually if needed
 cd /vagrant/exploits/lnk
 python3 -m http.server 8080 &
 

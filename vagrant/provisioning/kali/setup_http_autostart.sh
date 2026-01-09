@@ -24,7 +24,8 @@ echo "[1/3] Creating systemd service..."
 sudo tee /etc/systemd/system/${SERVICE_NAME}.service > /dev/null << EOF
 [Unit]
 Description=LNK Exploit HTTP Server
-After=network.target vagrant.mount
+After=network-online.target vagrant.mount
+Wants=network-online.target
 Requires=vagrant.mount
 
 [Service]
@@ -32,9 +33,11 @@ Type=simple
 User=vagrant
 Group=vagrant
 WorkingDirectory=${EXPLOIT_DIR}
+ExecStartPre=/bin/sleep 5
+ExecStartPre=/bin/bash -c 'timeout 30 bash -c "until [ -f ${EXPLOIT_DIR}/shell.ps1 ]; do sleep 1; done"'
 ExecStart=/usr/bin/python3 -m http.server ${HTTP_PORT}
 Restart=always
-RestartSec=5
+RestartSec=10
 StandardOutput=journal
 StandardError=journal
 

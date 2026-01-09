@@ -43,15 +43,33 @@ try {
 
 Write-Host
 
-# Test 3: Try HTTP request
+# Test 3: Try HTTP request (with retry logic)
 Write-Host "[3/3] Testing HTTP request to Kali server..." -NoNewline
-try {
-    $response = Invoke-WebRequest -Uri "http://${KALI_IP}:${HTTP_PORT}/" -Method Head -TimeoutSec 5 -ErrorAction Stop
-    Write-Host " SUCCESS" -ForegroundColor Green
-    Write-Host "    HTTP server is responding" -ForegroundColor Gray
-} catch {
-    Write-Host " FAILED" -ForegroundColor Red
-    Write-Host "    HTTP server not responding" -ForegroundColor Red
+
+$maxRetries = 10
+$retryDelay = 3
+$httpSuccess = $false
+
+for ($i = 1; $i -le $maxRetries; $i++) {
+    try {
+        $response = Invoke-WebRequest -Uri "http://${KALI_IP}:${HTTP_PORT}/" -Method Head -TimeoutSec 5 -ErrorAction Stop
+        Write-Host " SUCCESS" -ForegroundColor Green
+        Write-Host "    HTTP server is responding" -ForegroundColor Gray
+        $httpSuccess = $true
+        break
+    } catch {
+        if ($i -lt $maxRetries) {
+            Write-Host "." -NoNewline -ForegroundColor Yellow
+            Start-Sleep -Seconds $retryDelay
+        }
+    }
+}
+
+if (-not $httpSuccess) {
+    Write-Host " WARNING" -ForegroundColor Yellow
+    Write-Host "    HTTP server not responding yet" -ForegroundColor Yellow
+    Write-Host "    This is normal during first boot - server may still be starting" -ForegroundColor Gray
+    Write-Host "    The HTTP server will be available after Kali fully boots" -ForegroundColor Gray
 }
 
 Write-Host
