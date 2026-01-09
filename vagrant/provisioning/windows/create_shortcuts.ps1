@@ -15,7 +15,7 @@ if (Test-Path "C:\vagrant\docs") {
 }
 
 # Shortcut 2: Download Fake PDF from Kali
-$DownloadScriptPath = "C:\vagrant\vagrant\provisioning\windows\download_lnk_from_kali.ps1"
+$DownloadScriptPath = "C:\vagrant\exploits\lnk\download_lnk_from_kali.ps1"
 if (Test-Path $DownloadScriptPath) {
     $Shortcut = $WshShell.CreateShortcut("$DesktopPath\Download_Fake_PDF_from_Kali.lnk")
     $Shortcut.TargetPath = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
@@ -26,6 +26,8 @@ if (Test-Path $DownloadScriptPath) {
     $Shortcut.WindowStyle = 1  # Normal window
     $Shortcut.Save()
     Write-Host "  [2/2] Download Fake PDF shortcut created" -ForegroundColor Green
+} else {
+    Write-Host "  [2/2] Download script not found at: $DownloadScriptPath" -ForegroundColor Yellow
 }
 
 Write-Host ""
