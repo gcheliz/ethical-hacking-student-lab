@@ -154,10 +154,10 @@ Vagrant.configure("2") do |config|
       path: "provisioning/windows/create_shortcuts.ps1",
       name: "Create desktop shortcuts"
 
-    # Provisioning Step 5: Copy PDFs to Desktop (EASY MODE)
+    # Provisioning Step 5: Setup PDF download script
     win.vm.provision "shell",
-      path: "provisioning/windows/copy_pdfs_to_desktop.ps1",
-      name: "Copy malicious PDFs to Desktop"
+      path: "provisioning/windows/setup_pdf_download.ps1",
+      name: "Setup PDF download script from Kali HTTP server"
 
     # Provisioning Step 6: Validate network configuration
     win.vm.provision "shell",

@@ -16,7 +16,8 @@ After=network.target
 Type=simple
 User=vagrant
 WorkingDirectory=/home/vagrant/.msf4/local
-ExecStart=/usr/bin/python3 -m http.server 8080
+# Bind only to host-only interface (192.168.56.101) not all interfaces
+ExecStart=/usr/bin/python3 -m http.server 8080 --bind 192.168.56.101
 Restart=always
 RestartSec=10
 
