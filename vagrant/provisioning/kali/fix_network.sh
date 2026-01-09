@@ -73,6 +73,8 @@ auto $IFACE
 iface $IFACE inet static
     address $EXPECTED_IP
     netmask $NETMASK
+    # Ensure route to exploit network uses this interface
+    post-up ip route add 192.168.56.0/24 dev $IFACE || true
 EOF
 
 echo "  ✓ Created /etc/network/interfaces.d/$IFACE"
@@ -109,7 +111,7 @@ fi
 
 # Step 5: Configure firewall (allow exploit traffic)
 echo
-echo "[5/5] Configuring firewall for exploit lab..."
+echo "[5/6] Configuring firewall for exploit lab..."
 
 # Check if iptables has restrictive rules
 RULE_COUNT=$(sudo iptables -L INPUT -n --line-numbers 2>/dev/null | wc -l)
@@ -123,6 +125,26 @@ if [ $RULE_COUNT -gt 2 ]; then
 else
     echo "  ✓ No restrictive firewall detected"
 fi
+
+echo
+
+# Step 6: Configure routing to prefer host-only interface
+echo "[6/6] Configuring routing for host-only traffic..."
+
+# Ensure explicit route for the 192.168.56.0/24 network via host-only interface
+sudo ip route add 192.168.56.0/24 dev $IFACE 2>/dev/null || true
+
+# Check if route exists
+if ip route show | grep -q "192.168.56.0/24 dev $IFACE"; then
+    echo "  ✓ Route configured: 192.168.56.0/24 via $IFACE"
+else
+    echo "  ⚠ Warning: Could not verify route"
+fi
+
+# Display routing table
+echo
+echo "  Current routing table:"
+ip route show | grep -E "$IFACE|default" | sed 's/^/    /'
 
 echo
 echo "════════════════════════════════════════════════════════════════"
