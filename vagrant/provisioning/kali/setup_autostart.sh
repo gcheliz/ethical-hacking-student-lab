@@ -11,41 +11,49 @@ sudo tee /etc/systemd/system/pdf-server.service > /dev/null << 'EOF'
 [Unit]
 Description=Malicious PDF HTTP Server
 After=network.target
+After=vagrant.mount
+Requires=network.target
 
 [Service]
 Type=simple
 User=vagrant
 WorkingDirectory=/home/vagrant/.msf4/local
-# Bind to all interfaces (accessible from 192.168.56.101)
 ExecStart=/usr/bin/python3 -m http.server 8080
-Restart=always
+Restart=on-failure
 RestartSec=5
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-# Enable the HTTP server service (will start on boot)
+# Enable and start the HTTP server service
 sudo systemctl daemon-reload
 sudo systemctl enable pdf-server.service
 
 # Try to start now
 echo "Starting HTTP server..."
-if sudo systemctl start pdf-server.service 2>/dev/null; then
-    # Wait a moment and check status
-    sleep 3
-    if sudo systemctl is-active --quiet pdf-server.service; then
-        echo "✓ HTTP server started successfully"
-        if [ -f "/home/vagrant/.msf4/local/JOAN-ESPINACH-TRD.pdf" ]; then
-            echo "  PDF URL: http://192.168.56.101:8080/JOAN-ESPINACH-TRD.pdf"
-        fi
-    else
-        echo "⚠ HTTP server not running yet (network may still be initializing)"
-        echo "  Service will start automatically on boot"
+sudo systemctl start pdf-server.service
+
+# Wait a moment for startup
+sleep 2
+
+# Check status
+if sudo systemctl is-active --quiet pdf-server.service; then
+    echo "✓ HTTP server started successfully"
+    echo "  Listening on: 0.0.0.0:8080"
+    echo "  Accessible from Windows: http://192.168.56.101:8080"
+
+    # Show available PDFs
+    if [ -f "/home/vagrant/.msf4/local/JOAN-ESPINACH-TRD.pdf" ]; then
+        echo "  PDF URL: http://192.168.56.101:8080/JOAN-ESPINACH-TRD.pdf"
     fi
 else
-    echo "⚠ Could not start HTTP server during provisioning"
-    echo "  Service enabled and will start on next boot"
+    echo "⚠ HTTP server not running yet"
+    echo "  Service is enabled and will start on boot"
+    echo "  To check status later: sudo systemctl status pdf-server"
+    echo "  To view logs: sudo journalctl -u pdf-server -n 50"
 fi
 
 echo ""
