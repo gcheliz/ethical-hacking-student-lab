@@ -10,18 +10,16 @@ mkdir -p /home/vagrant/.msf4/local
 sudo tee /etc/systemd/system/pdf-server.service > /dev/null << 'EOF'
 [Unit]
 Description=Malicious PDF HTTP Server
-After=network-online.target
-Wants=network-online.target
+After=network.target
 
 [Service]
 Type=simple
 User=vagrant
 WorkingDirectory=/home/vagrant/.msf4/local
-# Wait for network interface to be ready, then bind to host-only interface
-ExecStartPre=/bin/bash -c 'until ip addr show | grep -q "192.168.56.101"; do sleep 1; done'
-ExecStart=/usr/bin/python3 -m http.server 8080 --bind 192.168.56.101
+# Bind to all interfaces (accessible from 192.168.56.101)
+ExecStart=/usr/bin/python3 -m http.server 8080
 Restart=always
-RestartSec=10
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
