@@ -87,6 +87,7 @@ Wants=network-online.target sys-subsystem-net-devices-eth1.device
 Type=simple
 User=vagrant
 Environment="HOME=/home/vagrant"
+Environment="DISABLE_BOOTSNAP=1"
 # Bind explicitly to host-only interface eth1 (192.168.56.101:4444)
 ExecStart=/usr/bin/msfconsole -q -r /etc/metasploit/listener.rc
 Restart=always
