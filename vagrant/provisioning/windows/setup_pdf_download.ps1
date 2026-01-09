@@ -35,7 +35,7 @@ $PDF_FILES = @(
 )
 
 # Test connectivity to Kali HTTP server
-Write-Host "[1/3] Testing connection to Kali HTTP server..." -NoNewline
+Write-Host "[1/4] Testing connection to Kali HTTP server..." -NoNewline
 try {
     $response = Invoke-WebRequest -Uri $BASE_URL -Method Head -TimeoutSec 5 -ErrorAction Stop
     Write-Host " SUCCESS" -ForegroundColor Green
@@ -56,8 +56,35 @@ try {
 
 Write-Host
 
+# List available files on Kali server
+Write-Host "[2/4] Checking available PDF files on Kali..." -ForegroundColor Cyan
+try {
+    $indexPage = Invoke-WebRequest -Uri $BASE_URL -TimeoutSec 5
+    $availablePDFs = @()
+
+    # Parse HTML directory listing to find PDF files
+    $pdfMatches = [regex]::Matches($indexPage.Content, 'href="([^"]*\.pdf)"')
+    foreach ($match in $pdfMatches) {
+        $pdfName = $match.Groups[1].Value
+        $availablePDFs += $pdfName
+        Write-Host "  ✓ Found: $pdfName" -ForegroundColor Green
+    }
+
+    if ($availablePDFs.Count -eq 0) {
+        Write-Host "  ⚠ WARNING: No PDF files found on Kali server!" -ForegroundColor Yellow
+        Write-Host "    The PDFs may not have been generated yet." -ForegroundColor Yellow
+        Write-Host "    Make sure Kali has run the PDF generation script." -ForegroundColor Yellow
+        Write-Host ""
+        Read-Host "Press Enter to continue anyway (downloads will fail)"
+    }
+} catch {
+    Write-Host "  ⚠ Could not list files (server may not support directory listing)" -ForegroundColor Yellow
+}
+
+Write-Host
+
 # Download PDFs
-Write-Host "[2/3] Downloading PDF files..." -ForegroundColor Cyan
+Write-Host "[3/4] Downloading PDF files..." -ForegroundColor Cyan
 $downloadedCount = 0
 
 foreach ($pdf in $PDF_FILES) {
@@ -85,7 +112,7 @@ foreach ($pdf in $PDF_FILES) {
 Write-Host
 
 # Verify downloads
-Write-Host "[3/3] Verification..." -ForegroundColor Cyan
+Write-Host "[4/4] Verification..." -ForegroundColor Cyan
 if ($downloadedCount -eq 0) {
     Write-Host "  ERROR: No PDFs were downloaded!" -ForegroundColor Red
     Write-Host ""
