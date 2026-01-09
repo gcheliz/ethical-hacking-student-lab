@@ -155,7 +155,7 @@ try {
         Write-Host "Make sure:" -ForegroundColor Yellow
         Write-Host "  1. Kali VM is running" -ForegroundColor Yellow
         Write-Host "  2. Metasploit listener is started" -ForegroundColor Yellow
-        Write-Host "     Run on Kali: cd /vagrant/exploits && ./start_attack.sh" -ForegroundColor Yellow
+        Write-Host "     Run on Kali: cd /vagrant/exploits; ./start_attack.sh" -ForegroundColor Yellow
     }
 } catch {
     Write-Host "ERROR: $($_.Exception.Message)" -ForegroundColor Red
