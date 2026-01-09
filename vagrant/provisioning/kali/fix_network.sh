@@ -15,6 +15,19 @@ echo "  Configuring Private Network Interface (eth1)"
 echo "════════════════════════════════════════════════════════════════"
 echo
 
+# Check if NetworkManager is managing eth1 (can cause conflicts)
+if systemctl is-active --quiet NetworkManager 2>/dev/null; then
+    echo "[0/4] Checking NetworkManager..."
+    if nmcli device status 2>/dev/null | grep -q "eth1.*connected"; then
+        echo "  ⚠ NetworkManager is managing eth1 - setting to unmanaged..."
+        nmcli device set eth1 managed no 2>/dev/null || true
+        echo "  ✓ eth1 set to unmanaged mode"
+    else
+        echo "  ✓ NetworkManager not interfering with eth1"
+    fi
+    echo
+fi
+
 # Wait for eth1 to exist (Vagrant might still be creating it)
 echo "[1/4] Waiting for eth1 interface to exist..."
 RETRY=0
@@ -54,6 +67,7 @@ echo
 # Configure IP address with retries
 echo "[3/4] Configuring IP address $EXPECTED_IP..."
 RETRY=0
+MANUAL_CONFIG_THRESHOLD=5  # Start manual config after 5 attempts
 while [ $RETRY -lt $MAX_RETRIES ]; do
     CURRENT_IP=$(ip -4 addr show eth1 2>/dev/null | grep inet | awk '{print $2}' | cut -d'/' -f1)
 
@@ -62,17 +76,31 @@ while [ $RETRY -lt $MAX_RETRIES ]; do
         break
     fi
 
-    if [ -z "$CURRENT_IP" ]; then
-        echo "  Waiting for Vagrant to configure IP (attempt $((RETRY + 1))/$MAX_RETRIES)..."
-    else
-        echo "  Current IP: $CURRENT_IP (expected: $EXPECTED_IP)"
-        echo "  Fixing IP address..."
-        sudo ip addr flush dev eth1
+    RETRY=$((RETRY + 1))
+
+    # After threshold attempts, force manual configuration
+    if [ $RETRY -ge $MANUAL_CONFIG_THRESHOLD ]; then
+        if [ -z "$CURRENT_IP" ]; then
+            echo "  No IP detected - manually configuring (attempt $RETRY/$MAX_RETRIES)..."
+        else
+            echo "  Wrong IP: $CURRENT_IP (expected: $EXPECTED_IP) - fixing..."
+        fi
+
+        # Manual configuration
+        sudo ip addr flush dev eth1 2>/dev/null || true
         sudo ip addr add $EXPECTED_IP/24 dev eth1
         sudo ip link set eth1 up
+
+        # Ensure route is configured
+        sudo ip route add 192.168.56.0/24 dev eth1 2>/dev/null || true
+        sleep 1
+    else
+        # Give Vagrant a chance first
+        if [ -z "$CURRENT_IP" ]; then
+            echo "  Waiting for Vagrant auto-config (attempt $RETRY/$MANUAL_CONFIG_THRESHOLD)..."
+        fi
     fi
 
-    RETRY=$((RETRY + 1))
     if [ $RETRY -eq $MAX_RETRIES ]; then
         echo "  ✗ Failed to configure IP after $MAX_RETRIES attempts!"
         echo "  eth1 status:"
