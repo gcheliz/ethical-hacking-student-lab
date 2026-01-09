@@ -85,8 +85,8 @@ Write-Host ""
 Write-Host "Next steps:"
 Write-Host "  1. cd vagrant"
 Write-Host "  2. vagrant ssh kali"
-Write-Host "  3. cd /vagrant/exploits"
-Write-Host "  4. ./start_attack.sh"
+Write-Host "  3. cd /vagrant/exploits/lnk"
+Write-Host "  4. ./start_lnk_attack.sh"
 Write-Host ""
 
 Pop-Location
