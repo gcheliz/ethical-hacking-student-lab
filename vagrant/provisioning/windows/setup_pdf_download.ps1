@@ -91,7 +91,8 @@ foreach ($pdf in $PDF_FILES) {
     $url = "$BASE_URL/$pdf"
     $destination = Join-Path $DESKTOP $pdf
 
-    Write-Host "  Downloading $pdf..." -NoNewline
+    Write-Host "  Downloading from: $url" -ForegroundColor Gray
+    Write-Host "  File: $pdf..." -NoNewline
 
     try {
         Invoke-WebRequest -Uri $url -OutFile $destination -ErrorAction Stop
@@ -105,11 +106,10 @@ foreach ($pdf in $PDF_FILES) {
         }
     } catch {
         Write-Host " NOT FOUND" -ForegroundColor Yellow
-        Write-Host "    File may not exist on Kali server" -ForegroundColor Gray
+        Write-Host "    URL may not exist: $url" -ForegroundColor Gray
     }
+    Write-Host
 }
-
-Write-Host
 
 # Verify downloads
 Write-Host "[4/4] Verification..." -ForegroundColor Cyan
