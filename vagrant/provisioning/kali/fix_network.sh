@@ -13,38 +13,42 @@ echo "  Configuring Persistent Network"
 echo "════════════════════════════════════════════════════════════════"
 echo
 
-# Step 1: Detect which interface Vagrant configured
-echo "[1/4] Detecting network interface..."
+# Step 1: Detect the host-only interface (skip NAT interface)
+echo "[1/5] Detecting host-only network interface..."
 IFACE=""
-for ifc in eth0 eth1 enp0s3 enp0s8; do
+
+# Strategy: Find interface that's NOT the NAT interface
+for ifc in eth0 eth1 enp0s3 enp0s8 enp0s9; do
     if ip link show $ifc > /dev/null 2>&1; then
-        # Check if this interface has our expected IP or is on the right network
         CURRENT_IP=$(ip -4 addr show $ifc 2>/dev/null | grep inet | awk '{print $2}' | cut -d'/' -f1)
-        if [ "$CURRENT_IP" = "$EXPECTED_IP" ] || [ "$CURRENT_IP" = "" ]; then
-            # Check if it's not the NAT interface (usually 10.0.2.x)
-            if [ "$CURRENT_IP" != "10.0.2.15" ]; then
-                IFACE=$ifc
-                echo "  ✓ Using interface: $IFACE"
-                break
-            fi
+
+        # Skip NAT interface (10.0.2.x)
+        if [[ "$CURRENT_IP" =~ ^10\.0\.2\. ]]; then
+            echo "  Skipping NAT interface: $ifc ($CURRENT_IP)"
+            continue
         fi
+
+        # Found non-NAT interface
+        IFACE=$ifc
+        echo "  ✓ Using host-only interface: $IFACE"
+        if [ -n "$CURRENT_IP" ]; then
+            echo "    Current IP: $CURRENT_IP"
+        fi
+        break
     fi
 done
 
 if [ -z "$IFACE" ]; then
-    # Fallback: use eth1 if it exists, otherwise eth0
-    if ip link show eth1 > /dev/null 2>&1; then
-        IFACE="eth1"
-    else
-        IFACE="eth0"
-    fi
-    echo "  ⚠ Auto-detection failed, using: $IFACE"
+    echo "  ✗ ERROR: Could not detect host-only interface!"
+    echo "  Available interfaces:"
+    ip -4 addr show | grep -E "^[0-9]+:|inet " | sed 's/^/    /'
+    exit 1
 fi
 
 echo
 
 # Step 2: Disable NetworkManager for this interface
-echo "[2/4] Disabling NetworkManager for $IFACE..."
+echo "[2/5] Disabling NetworkManager for $IFACE..."
 if systemctl is-active --quiet NetworkManager 2>/dev/null; then
     sudo tee /etc/NetworkManager/conf.d/10-ignore-interface.conf > /dev/null << EOF
 [keyfile]
@@ -60,7 +64,7 @@ fi
 echo
 
 # Step 3: Create persistent network configuration
-echo "[3/4] Creating persistent network configuration..."
+echo "[3/5] Creating persistent network configuration..."
 
 sudo tee /etc/network/interfaces.d/$IFACE > /dev/null << EOF
 # Private network interface for exploit lab
@@ -125,9 +129,12 @@ echo "════════════════════════�
 echo "  ✓ Network Configuration Complete"
 echo "════════════════════════════════════════════════════════════════"
 echo
-echo "  Kali IP:    $EXPECTED_IP (eth1)"
+echo "  Interface:  $IFACE (host-only adapter)"
+echo "  Kali IP:    $EXPECTED_IP"
 echo "  Windows IP: $WINDOWS_IP (target)"
 echo
+echo "  NAT adapter: Used only for Vagrant management (SSH)"
+echo "  Exploit traffic: Uses host-only adapter ($IFACE)"
 echo "  Configuration persists across reboots."
 echo "  Metasploit can bind to $EXPECTED_IP:4444"
 echo
