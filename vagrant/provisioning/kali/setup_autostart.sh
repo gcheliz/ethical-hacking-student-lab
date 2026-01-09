@@ -63,8 +63,16 @@ mkdir -p /home/vagrant/.cache /home/vagrant/tmp
 chown -R vagrant:vagrant /home/vagrant/.cache /home/vagrant/tmp
 chmod 700 /home/vagrant/.cache /home/vagrant/tmp
 
-# Create Metasploit resource script for the listener
-sudo tee /etc/metasploit/listener.rc > /dev/null << 'EOF'
+# Create wrapper script to start and keep Metasploit listener alive
+sudo tee /usr/local/bin/metasploit-listener-service.sh > /dev/null << 'WRAPPER_EOF'
+#!/bin/bash
+# Metasploit Listener Service Wrapper
+# Starts the listener and keeps the process alive
+
+cd /home/vagrant
+
+# Create temporary resource script
+cat > /tmp/listener_service.rc << 'EOF'
 use exploit/multi/handler
 set PAYLOAD windows/meterpreter/reverse_tcp
 set LHOST 192.168.56.101
@@ -75,6 +83,13 @@ set SessionCommunicationTimeout 300
 set EnableStageEncoding true
 exploit -j -z
 EOF
+
+# Start msfconsole with resource script, then keep alive with tail
+# The tail command will block forever, keeping msfconsole running
+tail -f /dev/null | /usr/bin/msfconsole -q -r /tmp/listener_service.rc
+WRAPPER_EOF
+
+sudo chmod +x /usr/local/bin/metasploit-listener-service.sh
 
 # Create systemd service for Metasploit listener
 sudo tee /etc/systemd/system/metasploit-listener.service > /dev/null << 'EOF'
@@ -91,13 +106,12 @@ Environment="HOME=/home/vagrant"
 Environment="XDG_CACHE_HOME=/home/vagrant/.cache"
 Environment="TMPDIR=/home/vagrant/tmp"
 # Bind explicitly to host-only interface eth1 (192.168.56.101:4444)
-# Use -r for resource script and sleep infinity to keep process alive
-ExecStart=/bin/bash -c '/usr/bin/msfconsole -q -r /etc/metasploit/listener.rc -x "sleep infinity"'
+# Wrapper script starts listener and keeps process alive with tail -f /dev/null
+ExecStart=/usr/local/bin/metasploit-listener-service.sh
 Restart=always
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
-StandardInput=null
 # Prevent OOM killer from stopping the service
 OOMScoreAdjust=-900
 
