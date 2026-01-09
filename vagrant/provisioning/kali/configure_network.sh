@@ -39,4 +39,24 @@ if [ "$IP_FOUND" = true ]; then
     fi
 fi
 
+# Configure firewall to allow exploit traffic
+echo "Configuring firewall for exploit lab..."
+
+# Check if iptables has any rules
+RULE_COUNT=$(sudo iptables -L INPUT -n --line-numbers 2>/dev/null | wc -l)
+
+if [ $RULE_COUNT -gt 2 ]; then
+    echo "  Firewall rules detected, ensuring port 4444 is allowed..."
+
+    # Allow incoming connections on port 4444 (Metasploit listener)
+    sudo iptables -I INPUT -p tcp --dport 4444 -s 192.168.56.0/24 -j ACCEPT
+
+    # Allow all traffic on private network interface
+    sudo iptables -I INPUT -i eth1 -j ACCEPT
+
+    echo "  ✓ Port 4444 allowed from 192.168.56.0/24"
+else
+    echo "  ✓ No restrictive firewall rules found"
+fi
+
 echo "✓ Network configuration complete"
