@@ -6,64 +6,114 @@
 
 EXPECTED_IP="192.168.56.101"
 NETMASK="255.255.255.0"
+WINDOWS_IP="192.168.56.102"
+MAX_RETRIES=30
+RETRY_DELAY=2
 
-echo "Checking network interface eth1..."
+echo "════════════════════════════════════════════════════════════════"
+echo "  Configuring Private Network Interface (eth1)"
+echo "════════════════════════════════════════════════════════════════"
+echo
 
-# Check if eth1 exists
-if ! ip link show eth1 > /dev/null 2>&1; then
-    echo "  ✗ eth1 does not exist!"
-    echo "  Available interfaces:"
-    ip link show
-    exit 1
-fi
+# Wait for eth1 to exist (Vagrant might still be creating it)
+echo "[1/4] Waiting for eth1 interface to exist..."
+RETRY=0
+while [ $RETRY -lt $MAX_RETRIES ]; do
+    if ip link show eth1 > /dev/null 2>&1; then
+        echo "  ✓ eth1 interface exists"
+        break
+    fi
 
-echo "  ✓ eth1 interface exists"
+    RETRY=$((RETRY + 1))
+    if [ $RETRY -eq $MAX_RETRIES ]; then
+        echo "  ✗ eth1 never appeared after $MAX_RETRIES attempts!"
+        echo "  Available interfaces:"
+        ip link show
+        exit 1
+    fi
 
-# Check if eth1 is up
+    sleep $RETRY_DELAY
+done
+
+echo
+
+# Bring eth1 up if it's down
+echo "[2/4] Ensuring eth1 is UP..."
 ETH1_STATE=$(ip link show eth1 | grep -o "state [A-Z]*" | awk '{print $2}')
 if [ "$ETH1_STATE" != "UP" ]; then
     echo "  eth1 is DOWN - bringing it up..."
     sudo ip link set eth1 up
     sleep 2
+    echo "  ✓ eth1 is now UP"
+else
+    echo "  ✓ eth1 is already UP"
 fi
 
-# Check if eth1 has the correct IP
-CURRENT_IP=$(ip -4 addr show eth1 2>/dev/null | grep inet | awk '{print $2}' | cut -d'/' -f1)
+echo
 
-if [ "$CURRENT_IP" = "$EXPECTED_IP" ]; then
-    echo "  ✓ eth1 already has IP $EXPECTED_IP"
-else
-    echo "  eth1 has IP: $CURRENT_IP (expected: $EXPECTED_IP)"
-    echo "  Configuring eth1 with correct IP..."
+# Configure IP address with retries
+echo "[3/4] Configuring IP address $EXPECTED_IP..."
+RETRY=0
+while [ $RETRY -lt $MAX_RETRIES ]; do
+    CURRENT_IP=$(ip -4 addr show eth1 2>/dev/null | grep inet | awk '{print $2}' | cut -d'/' -f1)
 
-    # Remove any existing IP
-    if [ -n "$CURRENT_IP" ]; then
-        sudo ip addr flush dev eth1
+    if [ "$CURRENT_IP" = "$EXPECTED_IP" ]; then
+        echo "  ✓ eth1 has correct IP: $EXPECTED_IP"
+        break
     fi
 
-    # Add the correct IP
-    sudo ip addr add $EXPECTED_IP/24 dev eth1
-
-    # Bring interface up
-    sudo ip link set eth1 up
-
-    # Wait for interface to be ready
-    sleep 2
-
-    # Verify
-    NEW_IP=$(ip -4 addr show eth1 2>/dev/null | grep inet | awk '{print $2}' | cut -d'/' -f1)
-    if [ "$NEW_IP" = "$EXPECTED_IP" ]; then
-        echo "  ✓ eth1 configured successfully with IP $EXPECTED_IP"
+    if [ -z "$CURRENT_IP" ]; then
+        echo "  Waiting for Vagrant to configure IP (attempt $((RETRY + 1))/$MAX_RETRIES)..."
     else
-        echo "  ✗ Failed to configure eth1!"
+        echo "  Current IP: $CURRENT_IP (expected: $EXPECTED_IP)"
+        echo "  Fixing IP address..."
+        sudo ip addr flush dev eth1
+        sudo ip addr add $EXPECTED_IP/24 dev eth1
+        sudo ip link set eth1 up
+    fi
+
+    RETRY=$((RETRY + 1))
+    if [ $RETRY -eq $MAX_RETRIES ]; then
+        echo "  ✗ Failed to configure IP after $MAX_RETRIES attempts!"
+        echo "  eth1 status:"
+        ip addr show eth1
         exit 1
     fi
+
+    sleep $RETRY_DELAY
+done
+
+echo
+
+# Verify configuration
+echo "[4/4] Verifying network configuration..."
+echo "  Interface status:"
+ip -4 addr show eth1 | grep inet | sed 's/^/    /'
+
+# Test basic routing
+echo
+echo "  Testing routing..."
+if ip route get $WINDOWS_IP 2>/dev/null | grep -q "dev eth1"; then
+    echo "  ✓ Route to Windows network configured correctly"
+else
+    echo "  ⚠ Route to Windows may not be optimal"
+    echo "  This might work anyway, but connectivity may be affected"
 fi
 
-# Show final interface status
+# Test if we can ping Windows (if it's up)
 echo
-echo "Network interface status:"
-ip -4 addr show eth1
+echo "  Testing connectivity to Windows ($WINDOWS_IP)..."
+if ping -c 2 -W 2 $WINDOWS_IP > /dev/null 2>&1; then
+    echo "  ✓ Can reach Windows VM"
+else
+    echo "  ⚠ Cannot reach Windows (this is OK if Windows isn't built yet)"
+fi
 
 echo
-echo "✓ Network interface ready"
+echo "════════════════════════════════════════════════════════════════"
+echo "  ✓ Network Configuration Complete"
+echo "════════════════════════════════════════════════════════════════"
+echo
+echo "  Kali IP:    $EXPECTED_IP (eth1)"
+echo "  Windows IP: $WINDOWS_IP (target)"
+echo
