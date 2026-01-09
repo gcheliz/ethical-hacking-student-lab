@@ -10,9 +10,8 @@ mkdir -p /home/vagrant/.msf4/local
 sudo tee /etc/systemd/system/pdf-server.service > /dev/null << 'EOF'
 [Unit]
 Description=Malicious PDF HTTP Server
-After=network.target sys-subsystem-net-devices-eth1.device
-Wants=sys-subsystem-net-devices-eth1.device
-BindsTo=sys-subsystem-net-devices-eth1.device
+After=network-online.target sys-subsystem-net-devices-eth1.device
+Wants=network-online.target sys-subsystem-net-devices-eth1.device
 
 [Service]
 Type=simple
@@ -81,9 +80,8 @@ EOF
 sudo tee /etc/systemd/system/metasploit-listener.service > /dev/null << 'EOF'
 [Unit]
 Description=Metasploit Listener for PDF Exploit
-After=network.target sys-subsystem-net-devices-eth1.device
-Wants=sys-subsystem-net-devices-eth1.device
-BindsTo=sys-subsystem-net-devices-eth1.device
+After=network-online.target sys-subsystem-net-devices-eth1.device
+Wants=network-online.target sys-subsystem-net-devices-eth1.device
 
 [Service]
 Type=simple
@@ -107,47 +105,47 @@ EOF
 sudo systemctl daemon-reload
 sudo systemctl enable metasploit-listener.service
 
-# Start the listener now
+# Create helper script to start the listener (for troubleshooting)
+sudo tee /usr/local/bin/start-metasploit-listener.sh > /dev/null << 'HELPER_EOF'
+#!/bin/bash
+echo "Starting Metasploit listener service..."
 sudo systemctl start metasploit-listener.service
+sleep 5
 
-# Wait for Metasploit to initialize (takes longer than other services)
-echo "  Waiting for Metasploit listener to start (this may take 20-30 seconds)..."
-sleep 15
-
-# Check if listener is running
 if sudo systemctl is-active --quiet metasploit-listener.service; then
-    echo "✓ Metasploit listener service is running"
-    echo "  Listening on: 192.168.56.101:4444"
-    echo "  Check status: sudo systemctl status metasploit-listener"
-    echo "  View logs: sudo journalctl -u metasploit-listener -f"
-
-    # Verify port is actually listening (may take additional time)
-    echo "  Waiting for port 4444 to become available..."
-    PORT_READY=0
-    for i in {1..20}; do
+    echo "✓ Service started successfully"
+    echo ""
+    echo "Waiting for port 4444 to become available..."
+    for i in {1..30}; do
         if sudo ss -tuln | grep -q ":4444 "; then
-            echo "✓ Port 4444 is listening and ready for connections"
-            PORT_READY=1
-            break
+            echo "✓ Port 4444 is listening on 192.168.56.101"
+            echo ""
+            echo "Service status:"
+            sudo systemctl status metasploit-listener.service --no-pager -l
+            exit 0
         fi
         sleep 2
     done
-
-    if [ $PORT_READY -eq 0 ]; then
-        echo "⚠ WARNING: Port 4444 not detected after 40 seconds"
-        echo "  The listener may still be initializing. Check logs:"
-        echo "  sudo journalctl -u metasploit-listener -f"
-    fi
+    echo "⚠ Service running but port 4444 not detected after 60 seconds"
+    echo "  Check logs: sudo journalctl -u metasploit-listener -f"
 else
-    echo "⚠ WARNING: Metasploit listener service failed to start"
-    echo "  Check logs for errors:"
-    echo "  sudo journalctl -u metasploit-listener -xe"
+    echo "✗ Service failed to start"
     echo ""
-    echo "  Common issues:"
-    echo "  - Metasploit database not initialized (run: sudo msfdb init)"
-    echo "  - Permission issues with /home/vagrant/.msf4"
-    echo "  - Port 4444 already in use"
+    echo "Recent logs:"
+    sudo journalctl -u metasploit-listener -n 50 --no-pager
+    exit 1
 fi
+HELPER_EOF
+
+sudo chmod +x /usr/local/bin/start-metasploit-listener.sh
+
+echo "✓ Metasploit listener service configured"
+echo "  Service will start automatically on boot"
+echo "  To start now: sudo systemctl start metasploit-listener.service"
+echo "  Helper script: start-metasploit-listener.sh"
+echo ""
+echo "  Note: During provisioning, eth1 may not be fully ready yet."
+echo "        The service will start automatically after reboot."
 
 echo ""
 echo "═══════════════════════════════════════════════════════════"
