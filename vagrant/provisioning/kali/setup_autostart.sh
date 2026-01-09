@@ -70,8 +70,11 @@ set SessionCommunicationTimeout 300
 set EnableStageEncoding true
 exploit -j -z
 
-# Keep console alive - prevents msfconsole from exiting
-sleep
+# Keep console alive with infinite loop - prevents msfconsole from exiting
+puts "[*] Listener started. Press Ctrl+C to stop."
+loop do
+  sleep 60
+end
 EOF
 
 # Create systemd service for Metasploit listener
