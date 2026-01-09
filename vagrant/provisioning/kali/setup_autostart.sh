@@ -57,6 +57,11 @@ sudo mkdir -p /etc/metasploit
 echo "  Initializing Metasploit database..."
 sudo -u vagrant msfdb init 2>/dev/null || echo "  Database already initialized or initialization skipped"
 
+# Create bootsnap cache directory for vagrant user
+echo "  Creating bootsnap cache directory..."
+mkdir -p /home/vagrant/.cache/bootsnap
+chown -R vagrant:vagrant /home/vagrant/.cache/bootsnap
+
 # Create Metasploit resource script for the listener
 sudo tee /etc/metasploit/listener.rc > /dev/null << 'EOF'
 use exploit/multi/handler
@@ -87,7 +92,7 @@ Wants=network-online.target sys-subsystem-net-devices-eth1.device
 Type=simple
 User=vagrant
 Environment="HOME=/home/vagrant"
-Environment="DISABLE_BOOTSNAP=1"
+Environment="BOOTSNAP_CACHE_DIR=/home/vagrant/.cache/bootsnap"
 # Bind explicitly to host-only interface eth1 (192.168.56.101:4444)
 ExecStart=/usr/bin/msfconsole -q -r /etc/metasploit/listener.rc
 Restart=always
