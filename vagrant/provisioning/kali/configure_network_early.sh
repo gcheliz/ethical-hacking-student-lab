@@ -47,39 +47,29 @@ fi
 
 echo
 
-# Configure the interface immediately
-echo "[2/4] Configuring $IFACE with static IP..."
-sudo ip addr flush dev "$IFACE"
-sudo ip addr add "$EXPECTED_IP/24" dev "$IFACE"
-sudo ip link set "$IFACE" up
+# Stop NetworkManager from managing this interface
+echo "[2/6] Disabling NetworkManager for $IFACE..."
+sudo mkdir -p /etc/NetworkManager/conf.d
+sudo tee /etc/NetworkManager/conf.d/99-unmanaged.conf > /dev/null << EOF
+[keyfile]
+unmanaged-devices=interface-name:$IFACE
+EOF
 
-# Verify
-CURRENT_IP=$(ip addr show "$IFACE" | grep "inet " | awk '{print $2}' | cut -d'/' -f1)
-if [ "$CURRENT_IP" = "$EXPECTED_IP" ]; then
-    echo "  ✓ Interface configured: $IFACE = $EXPECTED_IP"
-else
-    echo "  ✗ Configuration failed!"
-    exit 1
-fi
+# Restart NetworkManager to apply config
+sudo systemctl restart NetworkManager 2>/dev/null || true
 
-echo
-
-# Add route
-echo "[3/4] Adding route for 192.168.56.0/24..."
-sudo ip route add 192.168.56.0/24 dev "$IFACE" 2>/dev/null || echo "  (route already exists)"
-
-# Add default gateway if needed
-if [ -n "$GATEWAY" ]; then
-    echo "  Adding gateway $GATEWAY..."
-    sudo ip route add default via "$GATEWAY" dev "$IFACE" metric 100 2>/dev/null || echo "  (gateway already exists)"
-fi
+# Kill any dhclient on this interface
+echo "[3/6] Stopping DHCP client on $IFACE..."
+sudo pkill -f "dhclient.*$IFACE" 2>/dev/null || true
+sleep 1
 
 echo
 
-# Make configuration persistent
-echo "[4/4] Creating persistent network configuration..."
+# Create persistent configuration file FIRST
+echo "[4/6] Creating persistent network configuration..."
 sudo tee /etc/network/interfaces.d/$IFACE > /dev/null << EOF
 # Host-only network interface for exploit lab
+# Managed by ifupdown, not NetworkManager
 auto $IFACE
 iface $IFACE inet static
     address $EXPECTED_IP
@@ -89,6 +79,44 @@ iface $IFACE inet static
 EOF
 
 echo "  ✓ Configuration saved to /etc/network/interfaces.d/$IFACE"
+echo
+
+# Now configure the interface using ifupdown
+echo "[5/6] Applying configuration with ifupdown..."
+# Bring interface down first if it's up
+sudo ifdown "$IFACE" 2>/dev/null || true
+# Flush any old IP
+sudo ip addr flush dev "$IFACE"
+# Bring it up with the new config
+sudo ifup "$IFACE"
+
+# Verify
+sleep 1
+CURRENT_IP=$(ip addr show "$IFACE" | grep "inet " | awk '{print $2}' | cut -d'/' -f1)
+if [ "$CURRENT_IP" = "$EXPECTED_IP" ]; then
+    echo "  ✓ Interface configured: $IFACE = $EXPECTED_IP"
+else
+    echo "  ✗ Configuration failed! IP is: $CURRENT_IP"
+    echo "  Trying manual configuration as fallback..."
+    sudo ip addr add "$EXPECTED_IP/24" dev "$IFACE" 2>/dev/null
+    sudo ip link set "$IFACE" up
+    sudo ip route add 192.168.56.0/24 dev "$IFACE" 2>/dev/null || true
+
+    # Verify again
+    CURRENT_IP=$(ip addr show "$IFACE" | grep "inet " | awk '{print $2}' | cut -d'/' -f1)
+    if [ "$CURRENT_IP" = "$EXPECTED_IP" ]; then
+        echo "  ✓ Manual configuration successful"
+    else
+        echo "  ✗ Manual configuration also failed!"
+        exit 1
+    fi
+fi
+
+echo
+
+# Prevent the interface from going down
+echo "[6/6] Ensuring interface stays up..."
+sudo ip link set "$IFACE" up
 echo
 
 echo "================================================================"
