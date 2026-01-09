@@ -83,7 +83,8 @@ try {
         if ($localIP -eq $EXPECTED_IP) {
             Write-Host "    ✓ Using host-only adapter ($localIP)" -ForegroundColor Green
         } else {
-            Write-Host "    ✗ WARNING: Using wrong adapter ($localIP, expected $EXPECTED_IP)" -ForegroundColor Red
+            Write-Host "    ✗ WARNING: Using wrong adapter" -ForegroundColor Red
+            Write-Host "      Current: $localIP, Expected: $EXPECTED_IP" -ForegroundColor Red
             $ValidationFailed = $true
         }
     } else {
