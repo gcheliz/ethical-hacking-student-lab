@@ -137,36 +137,43 @@ Vagrant.configure("2") do |config|
     # Provisioning Step 1: Disable ALL security
     win.vm.provision "shell",
       path: "provisioning/windows/disable_security.ps1",
+      privileged: true,
       name: "Disable Windows security features"
 
     # Provisioning Step 2: Install Adobe Reader
     win.vm.provision "shell",
       path: "provisioning/windows/install_adobe.ps1",
+      privileged: true,
       name: "Install and configure Adobe Reader 9.5.0"
 
     # Provisioning Step 3: Configure network
     win.vm.provision "shell",
       path: "provisioning/windows/configure_network.ps1",
+      privileged: true,
       name: "Configure static IP address"
 
     # Provisioning Step 4: Create desktop shortcuts
     win.vm.provision "shell",
       path: "provisioning/windows/create_shortcuts.ps1",
+      privileged: true,
       name: "Create desktop shortcuts"
 
     # Provisioning Step 5: Setup PDF download script
     win.vm.provision "shell",
       path: "provisioning/windows/setup_pdf_download.ps1",
+      privileged: true,
       name: "Setup PDF download script from Kali HTTP server"
 
     # Provisioning Step 6: Validate network configuration
     win.vm.provision "shell",
       path: "provisioning/windows/validate_network.ps1",
+      privileged: true,
       name: "Validate network configuration"
 
     # Final Step: Reboot to apply all settings
     win.vm.provision "shell",
       inline: "shutdown /r /t 30 /c 'Rebooting to apply all settings. VM will restart in 30 seconds.'",
+      privileged: true,
       name: "Final reboot"
   end
 
