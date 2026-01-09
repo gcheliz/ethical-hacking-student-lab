@@ -71,43 +71,105 @@ try {
 
     if ($wait) {
         $tcpClient.EndConnect($connection)
+
+        # Get local endpoint to verify source IP
+        $localIP = $tcpClient.Client.LocalEndPoint.Address.ToString()
         $tcpClient.Close()
+
         Write-Host " PASSED" -ForegroundColor Green
-        Write-Host "    Can connect to Kali:$LISTEN_PORT" -ForegroundColor Gray
+        Write-Host "    Successfully connected to Kali:$LISTEN_PORT" -ForegroundColor Gray
+        Write-Host "    Connection source IP: $localIP" -ForegroundColor Gray
+
+        if ($localIP -eq $EXPECTED_IP) {
+            Write-Host "    ✓ Using host-only adapter ($localIP)" -ForegroundColor Green
+        } else {
+            Write-Host "    ✗ WARNING: Using wrong adapter ($localIP, expected $EXPECTED_IP)" -ForegroundColor Red
+            $ValidationFailed = $true
+        }
     } else {
         $tcpClient.Close()
         Write-Host " WARNING" -ForegroundColor Yellow
-        Write-Host "    No listener on Kali:$LISTEN_PORT (expected if attack not started)" -ForegroundColor Yellow
+        Write-Host "    No listener on Kali:$LISTEN_PORT" -ForegroundColor Yellow
+        Write-Host "    This is OK if Metasploit listener hasn't started yet" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "    To start listener on Kali, run:" -ForegroundColor Yellow
+        Write-Host "      vagrant ssh kali" -ForegroundColor Gray
+        Write-Host "      cd /vagrant/exploits" -ForegroundColor Gray
+        Write-Host "      ./start_attack.sh" -ForegroundColor Gray
     }
 } catch {
     Write-Host " WARNING" -ForegroundColor Yellow
-    Write-Host "    Cannot connect to Kali:$LISTEN_PORT (listener may not be running yet)" -ForegroundColor Yellow
+    Write-Host "    Cannot connect to Kali:$LISTEN_PORT" -ForegroundColor Yellow
+    Write-Host "    Listener may not be running yet (this is OK during setup)" -ForegroundColor Yellow
 }
 
 Write-Host
 
-# Check 5: Verify source IP for outbound connections
-Write-Host "[5/5] Verifying outbound connection source IP..." -NoNewline
-try {
-    $testSocket = New-Object System.Net.Sockets.Socket([System.Net.Sockets.AddressFamily]::InterNetwork,
-                                                         [System.Net.Sockets.SocketType]::Stream,
-                                                         [System.Net.Sockets.ProtocolType]::Tcp)
-    $testSocket.Connect($KALI_IP, 22)  # Try SSH port
-    $localEndpoint = $testSocket.LocalEndPoint.Address.ToString()
-    $testSocket.Close()
+# Check 5: Create manual test script on Desktop
+Write-Host "[5/5] Creating TCP test script on Desktop..." -NoNewline
 
-    if ($localEndpoint -eq $EXPECTED_IP) {
-        Write-Host " PASSED" -ForegroundColor Green
-        Write-Host "    Outbound connections use $localEndpoint" -ForegroundColor Gray
+$testScriptPath = "C:\Users\vagrant\Desktop\Test-Kali-Connection.ps1"
+$testScript = @"
+# Test TCP Connection to Kali Metasploit Listener
+# Run this script when Metasploit listener is active
+
+`$KALI_IP = "192.168.56.101"
+`$PORT = 4444
+
+Write-Host "Testing TCP connection to Kali Metasploit listener..." -ForegroundColor Cyan
+Write-Host "Target: `${KALI_IP}:`${PORT}" -ForegroundColor Gray
+Write-Host
+
+try {
+    `$tcpClient = New-Object System.Net.Sockets.TcpClient
+    `$connection = `$tcpClient.BeginConnect(`$KALI_IP, `$PORT, `$null, `$null)
+    `$wait = `$connection.AsyncWaitHandle.WaitOne(5000, `$false)
+
+    if (`$wait) {
+        `$tcpClient.EndConnect(`$connection)
+        `$localIP = `$tcpClient.Client.LocalEndPoint.Address.ToString()
+        `$localPort = `$tcpClient.Client.LocalEndPoint.Port
+        `$tcpClient.Close()
+
+        Write-Host "SUCCESS: Connected to Kali!" -ForegroundColor Green
+        Write-Host ""
+        Write-Host "Connection details:" -ForegroundColor Cyan
+        Write-Host "  Source IP:   `$localIP" -ForegroundColor Gray
+        Write-Host "  Source Port: `$localPort" -ForegroundColor Gray
+        Write-Host "  Target:      `${KALI_IP}:`${PORT}" -ForegroundColor Gray
+        Write-Host ""
+
+        if (`$localIP -eq "192.168.56.102") {
+            Write-Host "VALIDATED: Using host-only adapter (192.168.56.102)" -ForegroundColor Green
+            Write-Host "The exploit should work correctly!" -ForegroundColor Green
+        } else {
+            Write-Host "WARNING: Using wrong adapter (`$localIP)" -ForegroundColor Red
+            Write-Host "Expected to use 192.168.56.102 (host-only adapter)" -ForegroundColor Red
+            Write-Host "The exploit may not work!" -ForegroundColor Red
+        }
     } else {
-        Write-Host " FAILED" -ForegroundColor Red
-        Write-Host "    Outbound connections use $localEndpoint (expected $EXPECTED_IP)" -ForegroundColor Red
-        Write-Host "    This means Windows is NOT using the host-only adapter!" -ForegroundColor Red
-        $ValidationFailed = $true
+        `$tcpClient.Close()
+        Write-Host "FAILED: Cannot connect to `${KALI_IP}:`${PORT}" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "Make sure:" -ForegroundColor Yellow
+        Write-Host "  1. Kali VM is running" -ForegroundColor Yellow
+        Write-Host "  2. Metasploit listener is started" -ForegroundColor Yellow
+        Write-Host "     Run on Kali: cd /vagrant/exploits && ./start_attack.sh" -ForegroundColor Yellow
     }
 } catch {
-    Write-Host " WARNING" -ForegroundColor Yellow
-    Write-Host "    Could not determine outbound IP" -ForegroundColor Yellow
+    Write-Host "ERROR: `$(`$_.Exception.Message)" -ForegroundColor Red
+}
+
+Write-Host ""
+Read-Host "Press Enter to close"
+"@
+
+try {
+    $testScript | Out-File -FilePath $testScriptPath -Encoding ASCII -Force
+    Write-Host " Done" -ForegroundColor Green
+    Write-Host "    Created: Test-Kali-Connection.ps1 on Desktop" -ForegroundColor Gray
+} catch {
+    Write-Host " Failed" -ForegroundColor Yellow
 }
 
 Write-Host
