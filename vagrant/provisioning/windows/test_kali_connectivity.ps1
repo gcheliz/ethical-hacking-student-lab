@@ -46,30 +46,42 @@ Write-Host
 # Test 3: Try HTTP request (with retry logic)
 Write-Host "[3/3] Testing HTTP request to Kali server..." -NoNewline
 
-$maxRetries = 10
+$maxRetries = 20
 $retryDelay = 3
 $httpSuccess = $false
+
+Write-Host ""
+Write-Host "    Waiting for Kali HTTP server (max 60 seconds)..." -ForegroundColor Gray
 
 for ($i = 1; $i -le $maxRetries; $i++) {
     try {
         $response = Invoke-WebRequest -Uri "http://${KALI_IP}:${HTTP_PORT}/" -Method Head -TimeoutSec 5 -ErrorAction Stop
-        Write-Host " SUCCESS" -ForegroundColor Green
+        Write-Host "    SUCCESS" -ForegroundColor Green
         Write-Host "    HTTP server is responding" -ForegroundColor Gray
         $httpSuccess = $true
         break
     } catch {
         if ($i -lt $maxRetries) {
-            Write-Host "." -NoNewline -ForegroundColor Yellow
+            Write-Host "    Attempt $i/${maxRetries}: Waiting..." -NoNewline -ForegroundColor Yellow
             Start-Sleep -Seconds $retryDelay
+            Write-Host " retrying" -ForegroundColor Yellow
         }
     }
 }
 
 if (-not $httpSuccess) {
-    Write-Host " WARNING" -ForegroundColor Yellow
-    Write-Host "    HTTP server not responding yet" -ForegroundColor Yellow
-    Write-Host "    This is normal during first boot - server may still be starting" -ForegroundColor Gray
-    Write-Host "    The HTTP server will be available after Kali fully boots" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "    WARNING: HTTP server not responding after ${maxRetries} attempts" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "    This can happen if:" -ForegroundColor Gray
+    Write-Host "      - Kali VM is still provisioning (check 'vagrant status')" -ForegroundColor Gray
+    Write-Host "      - HTTP server needs more time to start" -ForegroundColor Gray
+    Write-Host "      - Network interface isn't fully ready" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "    The exploit lab will still work - HTTP server auto-starts on boot" -ForegroundColor Cyan
+    Write-Host "    After both VMs finish provisioning, test with:" -ForegroundColor Cyan
+    Write-Host "      vagrant ssh kali -c 'ss -tuln | grep 8080'" -ForegroundColor White
+    Write-Host ""
 }
 
 Write-Host
