@@ -17,9 +17,34 @@ PAYLOAD_DIR="/home/vagrant/hta_payloads"  # Non-shared directory for generated f
 SERVICE_NAME="hta-http-server"
 
 # ============================================================================
-# Create systemd service file
+# Create systemd service file with wrapper script
 # ============================================================================
-echo "[1/2] Creating systemd service..."
+echo "[1/3] Creating HTTP server wrapper script..."
+
+# Create a wrapper script that waits for network before starting
+sudo tee /usr/local/bin/start-hta-http-server.sh > /dev/null << 'WRAPPER_EOF'
+#!/bin/bash
+# Wait for network interface to be ready
+MAX_WAIT=60
+elapsed=0
+while [ $elapsed -lt $MAX_WAIT ]; do
+    if ip addr show eth1 2>/dev/null | grep -q '192.168.56.101'; then
+        # Network ready, start server
+        cd /home/vagrant/hta_payloads
+        exec /usr/bin/python3 -m http.server 8080 --bind 192.168.56.101
+    fi
+    sleep 2
+    elapsed=$((elapsed + 2))
+done
+
+# If we get here, network not ready after timeout
+echo "ERROR: Network interface eth1 (192.168.56.101) not ready after ${MAX_WAIT}s" >&2
+exit 1
+WRAPPER_EOF
+
+sudo chmod +x /usr/local/bin/start-hta-http-server.sh
+
+echo "[2/3] Creating systemd service..."
 
 sudo tee /etc/systemd/system/${SERVICE_NAME}.service > /dev/null << EOF
 [Unit]
@@ -31,11 +56,9 @@ Wants=network-online.target
 Type=simple
 User=vagrant
 Group=vagrant
-WorkingDirectory=${PAYLOAD_DIR}
-# Simple retry logic: If network/files not ready, service will fail and restart
-ExecStart=/usr/bin/python3 -m http.server ${HTTP_PORT} --bind 192.168.56.101
+ExecStart=/usr/local/bin/start-hta-http-server.sh
 Restart=always
-RestartSec=5
+RestartSec=10
 StandardOutput=journal
 StandardError=journal
 
@@ -49,7 +72,7 @@ echo
 # ============================================================================
 # Enable and start service
 # ============================================================================
-echo "[2/2] Enabling and starting service..."
+echo "[3/3] Enabling and starting service..."
 
 # Reload systemd
 sudo systemctl daemon-reload
@@ -82,13 +105,17 @@ echo "  Name: ${SERVICE_NAME}"
 echo "  Port: ${HTTP_PORT}"
 echo "  Bind: 192.168.56.101"
 echo "  Directory: ${PAYLOAD_DIR}"
+echo "  Wrapper: /usr/local/bin/start-hta-http-server.sh"
 echo
-echo "The HTTP server will:"
-echo "  - Auto-start on every boot via systemd"
-echo "  - Be available after VM restart"
+echo "How it works:"
+echo "  - Systemd starts wrapper script on boot"
+echo "  - Wrapper waits for network interface (eth1)"
+echo "  - Then starts Python HTTP server"
+echo "  - Auto-restarts if it crashes"
 echo
-echo "To check status after boot:"
+echo "To check status:"
 echo "  sudo systemctl status ${SERVICE_NAME}"
+echo "  journalctl -u ${SERVICE_NAME} -f"
 echo
 echo "Access at: http://192.168.56.101:${HTTP_PORT}/"
 echo
