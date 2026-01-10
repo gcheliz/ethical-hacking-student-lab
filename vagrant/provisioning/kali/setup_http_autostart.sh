@@ -50,20 +50,28 @@ echo "✓ Service file created: /etc/systemd/system/${SERVICE_NAME}.service"
 echo
 
 # ============================================================================
-# Enable service (don't start during provisioning)
+# Enable and start service
 # ============================================================================
-echo "[2/2] Enabling service for automatic startup on boot..."
+echo "[2/2] Enabling and starting service..."
 
 # Reload systemd
 sudo systemctl daemon-reload
 
-# Enable service to start on boot (don't start now to avoid timeout)
+# Enable service to start on boot
 sudo systemctl enable ${SERVICE_NAME}.service
 
-echo "✓ Service enabled"
-echo
-echo "Note: Service will start automatically on next boot"
-echo "      (Not started now to avoid provisioning timeout)"
+# Start service now
+sudo systemctl start ${SERVICE_NAME}.service
+
+# Wait for service to be ready
+sleep 2
+
+# Verify service is running
+if sudo systemctl is-active --quiet ${SERVICE_NAME}.service; then
+    echo "✓ Service enabled and started successfully"
+else
+    echo "⚠ Warning: Service enabled but not running (will start on boot)"
+fi
 
 echo
 echo "=================================="
@@ -75,9 +83,9 @@ echo "  Name: ${SERVICE_NAME}"
 echo "  Port: ${HTTP_PORT}"
 echo "  Bind: 192.168.56.101"
 echo "  Directory: ${PAYLOAD_DIR}"
+echo "  Status: Running"
 echo
-echo "The HTTP server will start automatically on boot."
-echo "After reboot, it will be accessible at:"
+echo "HTTP server is now accessible at:"
 echo "  http://192.168.56.101:${HTTP_PORT}/"
 echo
 echo "Useful commands:"
