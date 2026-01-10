@@ -1,140 +1,118 @@
 # Resources Directory
 
-This directory contains the Adobe Reader 9.5.0 installer required for the lab.
+Contains Adobe Reader 9.5.0 installer for PDF icon social engineering.
 
-## For Repository Maintainers
+---
 
-### Creating the ZIP file
+## Contents
 
-The Adobe Reader installer should be compressed and committed to the repository:
+| File | Size | Purpose |
+|------|------|---------|
+| `AdobeReader_9.5.zip` | ~32 MB | Compressed Adobe Reader 9.5.0 installer |
 
-**On Windows (PowerShell):**
-```powershell
-# Step 1: Obtain Adobe Reader 9.5.0 (50MB file)
-# Download from: https://www.oldversion.com/windows/adobe-reader-9-5-0
-
-# Step 2: Rename the file
-Rename-Item "AdbeRdr950_en_US.exe" "AdobeReader_9.5.exe"
-
-# Step 3: Verify size (should be ~50MB)
-Get-Item AdobeReader_9.5.exe | Select-Object Name, @{Name="SizeMB";Expression={[math]::Round($_.Length / 1MB, 2)}}
-
-# Step 4: Compress with ZIP
-Compress-Archive -Path AdobeReader_9.5.exe -DestinationPath AdobeReader_9.5.zip -CompressionLevel Optimal
-
-# Step 5: Move to resources folder
-Move-Item AdobeReader_9.5.zip resources\
-
-# Step 6: Add to git
-git add resources/AdobeReader_9.5.zip
-git commit -m "Add Adobe Reader 9.5.0 installer (zipped)"
-git push
-```
-
-**On Linux/macOS:**
-```bash
-# Step 1: Obtain Adobe Reader 9.5.0 (50MB file)
-# Download from: https://www.oldversion.com/windows/adobe-reader-9-5-0
-
-# Step 2: Rename the file
-mv AdbeRdr950_en_US.exe AdobeReader_9.5.exe
-
-# Step 3: Verify size (should be ~52MB)
-ls -lh AdobeReader_9.5.exe
-
-# Step 4: Compress with ZIP
-zip AdobeReader_9.5.zip AdobeReader_9.5.exe
-
-# Step 5: Move to resources folder
-mv AdobeReader_9.5.zip resources/
-
-# Step 6: Add to git
-git add resources/AdobeReader_9.5.zip
-git commit -m "Add Adobe Reader 9.5.0 installer (zipped)"
-git push
-```
-
-### File Details
-
-- **Original File:** AdbeRdr950_en_US.exe
-- **Renamed To:** AdobeReader_9.5.exe
-- **Size:** ~52,428,800 bytes (50 MB)
-- **Compressed:** AdobeReader_9.5.zip (~40-45 MB)
-
-**Important:** The uncompressed .exe file is ignored by git (see .gitignore). Only the .zip file should be committed.
+---
 
 ## For Students
 
-**You don't need to do anything!**
+### If AdobeReader_9.5.zip is Missing
 
-The setup script (`setup.ps1` or `setup.sh`) will automatically extract the installer from `AdobeReader_9.5.zip` when you run it.
+You may see during setup:
+```
+[WARNING] Adobe Reader ZIP not found
+HTA files will use default Windows document icon
+```
 
-The extraction process:
-1. Setup script checks for `resources/AdobeReader_9.5.zip`
-2. Extracts the .exe file to `resources/AdobeReader_9.5.exe`
-3. Verifies the file is approximately 50MB
-4. Continues with lab setup
+**This is OK!** The lab works fine without it:
+- ✅ Exploit functions normally
+- ❌ HTA files show Windows doc icon instead of PDF icon
+- ⚠️ Social engineering slightly less convincing
+
+**To add PDF icon support:**
+1. Get `AdobeReader_9.5.zip` from instructor
+2. Place in `resources/` folder
+3. Reprovision: `cd vagrant && vagrant provision win2k8`
+
+---
+
+## For Repository Maintainers
+
+### Creating the ZIP File
+
+**Download:**
+- Source: https://www.oldversion.com/windows/adobe-reader-9-5-0
+- File: `AdbeRdr950_en_US.exe` (~50 MB)
+
+**Prepare:**
+
+| Platform | Commands |
+|----------|----------|
+| **Windows** | `Rename-Item AdbeRdr950_en_US.exe AdobeReader_9.5.exe`<br/>`Compress-Archive AdobeReader_9.5.exe AdobeReader_9.5.zip` |
+| **Linux/macOS** | `mv AdbeRdr950_en_US.exe AdobeReader_9.5.exe`<br/>`zip AdobeReader_9.5.zip AdobeReader_9.5.exe` |
+
+**Commit:**
+```bash
+git add resources/AdobeReader_9.5.zip
+git commit -m "Add Adobe Reader 9.5.0 installer"
+git push
+```
+
+### File Specifications
+
+| Property | Value |
+|----------|-------|
+| Original filename | AdbeRdr950_en_US.exe |
+| Renamed to | AdobeReader_9.5.exe |
+| Uncompressed size | ~50 MB |
+| Compressed size | ~32 MB |
+| Format | ZIP archive |
+
+---
+
+## Why Adobe Reader 9.5.0?
+
+| Reason | Explanation |
+|--------|-------------|
+| **Authentic PDF icon** | Provides red Adobe PDF icon for realistic social engineering |
+| **Intentionally outdated** | Version from 2010 with known vulnerabilities (educational) |
+| **Lab safety** | Old version ensures no accidental production use |
+
+---
+
+## Security Warning
+
+⚠️ **Adobe Reader 9.5.0 is intentionally vulnerable** (2010 version with known CVEs)
+
+**Use ONLY in isolated lab environments. Never:**
+- Install on production systems
+- Connect to the internet
+- Use for real PDF viewing
+
+This is for **security education only**.
+
+---
 
 ## Troubleshooting
 
-### If AdobeReader_9.5.zip is missing
-
-**Error you'll see:**
-```
-[ERROR] Adobe Reader ZIP archive not found!
-The file resources\AdobeReader_9.5.zip is missing.
-```
-
-**Solution:**
-Contact your instructor to obtain the `AdobeReader_9.5.zip` file.
-
-### Verify the ZIP file
+### Verify ZIP File
 
 **Windows:**
 ```powershell
-# Check if file exists
 Test-Path resources\AdobeReader_9.5.zip
-
-# Check file size
-Get-Item resources\AdobeReader_9.5.zip | Select-Object Name, @{Name="SizeMB";Expression={[math]::Round($_.Length / 1MB, 2)}}
-
-# Test extraction
-Expand-Archive -Path resources\AdobeReader_9.5.zip -DestinationPath test-extract -Force
-Get-ChildItem test-extract
-Remove-Item test-extract -Recurse -Force
+Get-Item resources\AdobeReader_9.5.zip | Select-Object Name, Length
 ```
 
 **Linux/macOS:**
 ```bash
-# Check if file exists
 ls -lh resources/AdobeReader_9.5.zip
-
-# Test the ZIP integrity
-unzip -t resources/AdobeReader_9.5.zip
-
-# View contents without extracting
-unzip -l resources/AdobeReader_9.5.zip
+unzip -t resources/AdobeReader_9.5.zip  # Test integrity
 ```
 
-Should show: `AdobeReader_9.5.exe` (or `AdbeRdr950_en_US.exe`)
+### Installation Fails
 
-### Manual Extraction (if automatic fails)
+If Adobe won't install, provisioning continues with warning. Lab works normally with Windows document icon instead of PDF icon.
 
-**Windows:**
-1. Right-click `resources\AdobeReader_9.5.zip`
-2. Select "Extract All..."
-3. Extract to a temporary folder
-4. Copy the .exe file to `resources\AdobeReader_9.5.exe`
-5. Run `.\setup.ps1` again
+**No action needed** - exploit still functions.
 
-**Linux/macOS:**
-```bash
-unzip resources/AdobeReader_9.5.zip -d temp
-mv temp/*.exe resources/AdobeReader_9.5.exe
-rmdir temp
-./setup.sh
-```
+---
 
-## Security Note
-
-Adobe Reader 9.5.0 is an **intentionally vulnerable** version used for educational security demonstrations. This software should **NEVER** be used in production environments or connected to the internet.
+**Version:** 2.0 - HTA Exploit Lab

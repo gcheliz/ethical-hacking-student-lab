@@ -1,5 +1,7 @@
-# Ethical Hacking PDF Exploit Lab
-**Local VirtualBox Environment for Students**
+# Ethical Hacking Lab - HTA Exploit
+
+**Automated penetration testing environment for students**
+Set up a complete lab in under 30 minutes with one command.
 
 [![License](https://img.shields.io/badge/license-Educational-blue.svg)](LICENSE)
 [![VirtualBox](https://img.shields.io/badge/VirtualBox-7.0+-blue.svg)](https://www.virtualbox.org/)
@@ -7,580 +9,290 @@
 
 ---
 
-## 🎯 Overview
+## Overview
 
-This repository provides a **fully automated, local ethical hacking lab** that demonstrates PDF-based exploitation techniques using Adobe Reader vulnerabilities. Students can set up a complete penetration testing environment in **under 30 minutes** with a single command.
+This lab demonstrates **social engineering attacks** using malicious HTA files disguised as PDFs. Learn offensive and defensive security in a safe, isolated environment.
 
-### What You'll Learn
+### Lab Architecture
 
-- PDF-based exploitation techniques
-- Metasploit Framework usage
-- Post-exploitation with Meterpreter
-- Network security concepts
-- Defensive security principles
-- Ethical hacking methodology
+```mermaid
+graph LR
+    Host[Your Computer] -->|VirtualBox| Kali[Kali Linux<br/>192.168.56.101<br/>Attacker]
+    Host -->|VirtualBox| Windows[Windows Server 2008<br/>192.168.56.102<br/>Target]
+    Kali <-->|Host-Only Network<br/>192.168.56.0/24| Windows
+
+    style Kali fill:#2ea44f,color:#fff
+    style Windows fill:#e74c3c,color:#fff
+    style Host fill:#3498db,color:#fff
+```
+
+### Attack Workflow
+
+```mermaid
+flowchart TB
+    A[Attacker: Kali Linux] -->|1. Generate| B[Meterpreter EXE]
+    A -->|2. Create| C[Malicious HTA File]
+    A -->|3. Host on| D[HTTP Server :8080]
+    A -->|4. Start| E[Metasploit Listener :4444]
+
+    F[Victim: Windows] -->|5. Downloads| C
+    C -->|6. Executes VBScript| G[Downloads update.exe]
+    G -->|7. Runs EXE| H[Meterpreter Payload]
+    H -->|8. Connects Back| E
+    E -->|9. Session Opened| I[Remote Access!]
+
+    style A fill:#2ea44f,color:#fff
+    style F fill:#e74c3c,color:#fff
+    style I fill:#f39c12,color:#fff
+```
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
-### One-Command Setup
+### Prerequisites
 
-**For Windows (PowerShell):**
-```powershell
-# Clone the repository
-git clone https://github.com/gcheliz/ethical-hacking-student-lab.git
-cd ethical-hacking-student-lab
+| Component | Minimum |
+|-----------|---------|
+| **OS** | Windows 10, macOS 10.15, Ubuntu 20.04 |
+| **CPU** | VT-x/AMD-V enabled, 2+ cores |
+| **RAM** | 8 GB |
+| **Disk** | 40 GB free |
+| **Software** | VirtualBox 7.0+, Vagrant 2.3+ |
 
-# Run automated setup (15-30 minutes)
-.\setup.ps1
-```
+### Installation
 
-**For Linux/macOS (Bash):**
+**macOS/Linux:**
 ```bash
-# Clone the repository
 git clone https://github.com/gcheliz/ethical-hacking-student-lab.git
 cd ethical-hacking-student-lab
-
-# Run automated setup (15-30 minutes)
 ./setup.sh
 ```
 
-### Run Your First Attack
-
-```bash
-# 1. Access Kali Linux
-cd vagrant
-vagrant ssh kali
-
-# 2. Start the attack
-cd /vagrant/exploits
-./start_attack.sh
-
-# 3. On Windows VM, open the malicious PDF
-# 4. Get Meterpreter shell!
+**Windows (PowerShell as Administrator):**
+```powershell
+git clone https://github.com/gcheliz/ethical-hacking-student-lab.git
+cd ethical-hacking-student-lab
+.\setup.ps1
 ```
 
-### Reset When Done
+Setup takes 15-30 minutes and is fully automated.
 
-**Windows:** `.\reset.ps1`
-**Linux/macOS:** `./reset.sh`
+### First Attack
+
+```bash
+# 1. Access Kali
+cd vagrant && vagrant ssh kali
+
+# 2. Start attack
+cd /vagrant/exploits/hta
+./start_hta_attack.sh
+
+# 3. On Windows VM: Double-click "Download_Exploit_from_Kali"
+# 4. Double-click downloaded file → Get Meterpreter session!
+```
+
+### Basic Meterpreter Commands
+
+```bash
+meterpreter> sysinfo        # System info
+meterpreter> getuid         # Current user
+meterpreter> screenshot     # Capture screen
+meterpreter> shell          # Windows command prompt
+meterpreter> help           # All commands
+```
+
+### Reset Lab
+
+```bash
+./reset.sh    # Restore VMs to clean state (30 seconds)
+```
 
 ---
 
-## 📋 Requirements
+## Documentation Map
 
-| Component | Minimum | Recommended |
-|-----------|---------|-------------|
-| **OS** | Windows 10, macOS 10.15, Ubuntu 20.04 | Windows 11, macOS 13+, Ubuntu 22.04 |
-| **CPU** | VT-x/AMD-V enabled | 4+ cores |
-| **RAM** | 8 GB | 16 GB |
-| **Disk** | 40 GB free | 60 GB free (SSD) |
-| **Software** | VirtualBox 7.0+, Vagrant 2.3+ | Latest versions |
+```mermaid
+graph TD
+    START[START HERE<br/>README.md] --> SETUP{Need to install?}
+    SETUP -->|Yes| INSTALL[INSTALLATION.md<br/>Step-by-step setup]
+    SETUP -->|No| ATTACK[docs/USER_GUIDE.md<br/>How to run attacks]
+
+    INSTALL --> ATTACK
+    ATTACK --> STUCK{Having issues?}
+    STUCK -->|Yes| TROUBLE[TROUBLESHOOTING.md<br/>Problem solutions]
+    STUCK -->|No| LEARN[docs/LEARNING_OBJECTIVES.md<br/>Educational goals]
+
+    ATTACK --> METERPRETER[docs/METERPRETER_USAGE_GUIDE.md<br/>Command reference]
+    ATTACK --> TECHNICAL[exploits/hta/README.md<br/>Technical details]
+
+    style START fill:#2ea44f,color:#fff
+    style ATTACK fill:#3498db,color:#fff
+    style TROUBLE fill:#e74c3c,color:#fff
+```
+
+**Quick Links:**
+- **[Installation Guide](INSTALLATION.md)** - System setup
+- **[User Guide](docs/USER_GUIDE.md)** - Attack scenarios and usage
+- **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues
+- **[Meterpreter Commands](docs/METERPRETER_USAGE_GUIDE.md)** - Post-exploitation reference
+- **[Learning Objectives](docs/LEARNING_OBJECTIVES.md)** - Educational outcomes
+- **[Technical Details](exploits/hta/README.md)** - HTA exploit deep-dive
 
 ---
 
-## 🏗️ What Gets Installed
+## What You'll Learn
+
+| Category | Skills |
+|----------|--------|
+| **Offensive** | Social engineering, HTA exploitation, Meterpreter usage, payload generation |
+| **Defensive** | Security controls, attack detection, incident response, user awareness |
+| **Tools** | Metasploit Framework, VirtualBox, Vagrant, Kali Linux |
+| **Concepts** | Reverse shells, network isolation, post-exploitation, MITRE ATT&CK |
+
+---
+
+## Lab Components
 
 ### Virtual Machines
 
-| VM | IP | Role | Software | Resources |
-|----|-----|------|----------|-----------|
-| **Kali Linux** | 192.168.56.101 | Attacker | Metasploit, Nmap, Python3 | 2GB RAM, 2 CPU |
-| **Windows Server 2008 R2** | 192.168.56.102 | Target | Adobe Reader 9.5.0 | 4GB RAM, 2 CPU |
+| VM | OS | IP | Role | Security |
+|----|----|----|------|----------|
+| **kali** | Kali Linux 2024 | 192.168.56.101 | Attacker | Metasploit, HTTP server |
+| **win2k8** | Windows Server 2008 R2 | 192.168.56.102 | Target | All defenses disabled |
+
+### Generated Exploit Files
+
+| File | Type | Purpose |
+|------|------|---------|
+| `update.exe` | EXE (73KB) | Meterpreter reverse TCP payload |
+| `Q4_Financial_Report_EXE.pdf.hta` | HTA | VBScript that downloads + executes EXE |
 
 ### Network Configuration
 
-- **Network Type:** Host-Only (192.168.56.0/24)
-- **Isolation:** Complete (no internet access from VMs)
-- **Connectivity:** VM-to-VM communication enabled
+```mermaid
+graph LR
+    subgraph "Host-Only Network: 192.168.56.0/24"
+        K[Kali<br/>192.168.56.101] <-->|Isolated| W[Windows<br/>192.168.56.102]
+    end
 
-### Exploit Materials
+    subgraph "NAT Network (Internet)"
+        K -->|Provisioning Only| Internet[Internet]
+        W -->|Provisioning Only| Internet
+    end
 
-- ✅ Malicious PDF files pre-generated
-- ✅ Metasploit listeners configured
-- ✅ One-click attack automation
-- ✅ Proof-of-concept scripts included
-
----
-
-## 📚 Documentation
-
-| Document | Description |
-|----------|-------------|
-| **[QUICK_START.md](docs/QUICK_START.md)** | 5-minute quick start guide |
-| **[INSTALLATION.md](INSTALLATION.md)** | Detailed installation instructions |
-| **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** | Common issues and solutions |
-| **[LEARNING_OBJECTIVES.md](docs/LEARNING_OBJECTIVES.md)** | Educational goals and outcomes |
-| **LAB_GUIDE.pdf** | Complete step-by-step lab manual |
-| **INSTRUCTOR_GUIDE.pdf** | Teaching notes and tips |
-
----
-
-## 🚀 Detailed Setup Guide
-
-### Step 1: Install Prerequisites
-
-**VirtualBox:**
-- Download: https://www.virtualbox.org/
-- Install for your operating system
-- Enable VT-x/AMD-V in BIOS if needed
-
-**Vagrant:**
-- Download: https://www.vagrantup.com/
-- Install for your operating system
-- Restart terminal after installation
-
-### Step 2: Clone Repository
-
-```bash
-git clone https://github.com/gcheliz/ethical-hacking-student-lab.git
-cd ethical-hacking-student-lab
-```
-
-### Step 3: Run Setup Script
-
-**Windows (PowerShell - Run as Administrator recommended):**
-```powershell
-.\setup.ps1
-```
-
-**Linux/macOS (Bash):**
-```bash
-./setup.sh
-```
-
-The script will:
-1. Check prerequisites ✓
-2. Download Adobe Reader 9.5.0 ✓
-3. Configure VirtualBox network ✓
-4. Build Kali Linux VM (5-10 min) ✓
-5. Build Windows VM (20-30 min) ✓
-6. Verify connectivity ✓
-7. Create snapshots ✓
-8. Generate exploit PDFs ✓
-
-**Total time: 15-30 minutes** (depending on internet speed)
-
----
-
-## 🎮 Using the Lab
-
-### Accessing VMs
-
-**Kali Linux (SSH):**
-```bash
-cd vagrant
-vagrant ssh kali
-```
-
-**Windows (GUI):**
-- VirtualBox window opens automatically
-- Or: `vagrant rdp win2k8`
-- Credentials: `vagrant / vagrant`
-
-### Running Attacks
-
-**Automated Attack:**
-```bash
-# From Kali
-cd /vagrant/exploits
-./start_attack.sh
-
-# Then open PDF on Windows
-# Get Meterpreter shell!
-```
-
-**Manual Attack:**
-```bash
-# 1. Generate PDF
-./generate_pdf.sh
-
-# 2. Start listener
-msfconsole
-use exploit/multi/handler
-set PAYLOAD windows/meterpreter/reverse_tcp
-set LHOST 192.168.56.101
-set LPORT 4444
-exploit
-
-# 3. Open PDF on Windows
-```
-
-### Meterpreter Commands
-
-```bash
-sysinfo              # System information
-getuid               # Current user
-pwd                  # Current directory
-ls                   # List files
-screenshot           # Take screenshot
-shell                # Get command shell
-upload file.txt C:\  # Upload file
-download C:\file.txt # Download file
-```
-
-### Creating Proof of Exploitation
-
-```bash
-./create_proof.sh your_name
-# Upload to compromised system
+    style K fill:#2ea44f,color:#fff
+    style W fill:#e74c3c,color:#fff
 ```
 
 ---
 
-## 🔄 Lab Management
+## Safety and Ethics
 
-### Reset to Clean State
+This lab is for **authorized educational purposes only**.
 
-**Windows:** `.\reset.ps1`
-**Linux/macOS:** `./reset.sh`
+| Do | Don't |
+|----|-------|
+| Use in isolated lab environment | Attack real systems without authorization |
+| Learn offensive AND defensive techniques | Share exploits for malicious purposes |
+| Practice responsible disclosure | Bypass security without permission |
+| Follow lab ethical guidelines | Violate computer fraud laws |
 
-Restores both VMs to fresh installation (30 seconds)
-
-### Check VM Status
-
-```bash
-cd vagrant
-vagrant status
-```
-
-### Stop VMs
-
-```bash
-cd vagrant
-vagrant halt
-```
-
-### Start VMs
-
-```bash
-cd vagrant
-vagrant up
-```
-
-### Complete Cleanup
-
-**Windows:** `.\cleanup.ps1`
-**Linux/macOS:** `./cleanup.sh`
-
-Removes all VMs and frees disk space
+**Legal:** Unauthorized computer access is illegal (CFAA, Computer Misuse Act, etc.). Use only in controlled educational settings.
 
 ---
 
-## 📂 Repository Structure
+## MITRE ATT&CK Mapping
+
+| Technique | ID | Lab Coverage |
+|-----------|----|----|
+| User Execution: Malicious File | T1204.002 | HTA file execution |
+| Mshta | T1218.005 | HTA application abuse |
+| Command and Scripting Interpreter: PowerShell | T1059.001 | Download + execute |
+| Ingress Tool Transfer | T1105 | EXE download from HTTP |
+| Application Layer Protocol | T1071 | HTTP for C2 communication |
+
+---
+
+## Troubleshooting
+
+### Quick Diagnostics
+
+```mermaid
+graph TD
+    START{Problem?} -->|Setup fails| SETUP[Check: VT-x enabled<br/>Disk space 40GB+<br/>RAM 8GB+]
+    START -->|VMs can't communicate| NETWORK[Check: Host-Only network exists<br/>IPs: 192.168.56.101/102<br/>Ping test]
+    START -->|HTA doesn't work| HTA[Check: HTTP server running<br/>update.exe exists<br/>Windows firewall off]
+    START -->|No Meterpreter session| METERPRETER[Check: Listener on :4444<br/>Network connectivity<br/>Payload executed]
+
+    SETUP --> DOC[See: TROUBLESHOOTING.md]
+    NETWORK --> DOC
+    HTA --> DOC
+    METERPRETER --> DOC
+
+    style START fill:#3498db,color:#fff
+    style DOC fill:#2ea44f,color:#fff
+```
+
+**Common Fixes:**
+- **VMs won't start:** Enable VT-x/AMD-V in BIOS
+- **Network issues:** Run `vagrant reload` to reset network
+- **HTTP server down:** `sudo systemctl start hta-http-server` on Kali
+- **Listener fails:** Check if port 4444 is available
+
+See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for comprehensive solutions.
+
+---
+
+## Project Structure
 
 ```
-ethical-hacking-pdf-lab/
-│
-├── README.md                          # This file
-├── INSTALLATION.md                    # Detailed setup guide
-├── TROUBLESHOOTING.md                 # Common issues
-├── LICENSE                            # Educational use license
-│
-├── setup.sh                           # ⭐ ONE-CLICK SETUP
-├── reset.sh                           # Reset to clean state
-├── cleanup.sh                         # Remove everything
-│
-├── vagrant/
-│   ├── Vagrantfile                    # VM configuration
-│   └── provisioning/                  # Automated setup
-│       ├── kali/                      # Kali provisioning
-│       │   ├── install_tools.sh
-│       │   ├── configure_network.sh
-│       │   └── create_exploits.sh
-│       └── windows/                   # Windows provisioning
-│           ├── disable_security.ps1
-│           ├── install_adobe.ps1
-│           ├── configure_network.ps1
-│           └── create_shortcuts.ps1
-│
-├── exploits/
-│   ├── generate_pdf.sh                # Create malicious PDFs
-│   ├── start_attack.sh                # ⭐ ONE-CLICK ATTACK
-│   └── create_proof.sh                # Generate proof file
-│
-├── resources/
-│   └── AdobeReader_9.5.exe           # Downloaded by setup.sh
-│
-└── docs/
-    ├── QUICK_START.md                 # 5-minute guide
-    ├── LEARNING_OBJECTIVES.md         # Educational goals
-    ├── LAB_GUIDE.pdf                  # Complete lab manual
-    └── INSTRUCTOR_GUIDE.pdf           # Teaching notes
+ethical-hacking-student-lab/
+├── setup.sh / setup.ps1           # Automated installation
+├── reset.sh / reset.ps1           # Reset VMs to clean state
+├── vagrant/                       # VM configurations
+│   ├── Vagrantfile               # VM definitions
+│   └── provisioning/             # Automated setup scripts
+├── exploits/hta/                 # HTA exploit scripts
+│   ├── create_exe_payload.sh    # Generate Meterpreter EXE
+│   ├── start_hta_attack.sh      # Launch attack automation
+│   └── README.md                # Technical documentation
+├── docs/                         # Additional documentation
+│   ├── USER_GUIDE.md            # Comprehensive usage guide
+│   ├── METERPRETER_USAGE_GUIDE.md  # Command reference
+│   └── LEARNING_OBJECTIVES.md   # Educational outcomes
+└── resources/                    # Adobe Reader installer
 ```
 
 ---
 
-## 🎓 Learning Path
+## Credits
 
-### Beginner (First Time)
-
-1. Run `./setup.sh` and wait for completion
-2. Read `docs/QUICK_START.md`
-3. Follow automated attack demo
-4. Understand what happened
-
-**Time:** 1 hour
-
-### Intermediate
-
-1. Read `LAB_GUIDE.pdf`
-2. Perform manual exploitation
-3. Try different Meterpreter commands
-4. Explore post-exploitation
-
-**Time:** 2-3 hours
-
-### Advanced
-
-1. Modify exploit parameters
-2. Try alternative Metasploit modules
-3. Attempt privilege escalation
-4. Research defenses
-
-**Time:** 4-6 hours
-
----
-
-## 🔒 Security & Ethics
-
-### ⚠️ IMPORTANT DISCLAIMERS
-
-**Educational Use Only:**
-- This lab is for authorized educational purposes only
-- Never use these techniques on systems you don't own
-- Always obtain written permission before testing
-
-**Legal Notice:**
-- Unauthorized access to computer systems is illegal
-- Violations may result in criminal prosecution
-- Use only in isolated lab environments
-
-**Ethical Guidelines:**
-- Only test on the provided VMs
-- Do not connect VMs to production networks
-- Keep malicious files contained
-- Follow your institution's acceptable use policy
-
-### Best Practices
-
-- ✅ Use in isolated environment (host-only network)
-- ✅ Keep VMs snapshots for easy reset
-- ✅ Document your findings professionally
-- ✅ Understand defensive countermeasures
-- ❌ Never use on unauthorized systems
-- ❌ Never share malicious files outside lab
-- ❌ Never connect to production networks
-
----
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**Setup fails:**
-```bash
-# Check prerequisites
-VBoxManage --version
-vagrant --version
-df -h  # Check disk space
-```
-
-**VMs won't start:**
-```bash
-# Enable virtualization in BIOS
-# Check: egrep -c '(vmx|svm)' /proc/cpuinfo
-```
-
-**Network issues:**
-```bash
-# Recreate network
-VBoxManage hostonlyif remove vboxnet0
-./setup.sh
-```
-
-**Exploit doesn't work:**
-```bash
-# Verify Windows security is disabled
-# Try alternative PDF
-# Check network connectivity
-```
-
-**See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for complete guide**
-
----
-
-## 🤝 Contributing
-
-### For Students
-
-Found a bug or have a suggestion?
-1. Check existing issues
-2. Create detailed bug report
-3. Include system info and error messages
-
-### For Instructors
-
-Want to improve the lab?
-1. Fork the repository
-2. Make improvements
-3. Submit pull request with:
-   - Clear description
-   - Testing evidence
-   - Documentation updates
-
----
-
-## 📊 Lab Statistics
-
-**Success Rate:** 95%+ (with proper prerequisites)
-**Setup Time:** 15-30 minutes (automated)
-**Learning Time:** 4-8 hours (complete lab)
-**Reset Time:** 30 seconds
-**Disk Usage:** ~30GB (running VMs)
-
----
-
-## 🎯 Benefits
-
-### For Students
-- ⏱️ **Fast setup:** 15-30 minutes vs 2+ hours manual
-- ✅ **High success rate:** 95%+ vs 50% manual setup
-- 🔄 **Easy reset:** 30 seconds to fresh state
-- 💰 **Zero cost:** No cloud fees, runs locally
-- 🎓 **Hands-on learning:** Real tools, real exploits
-
-### For Instructors
-- 👨‍🏫 **Consistent environment:** All students same setup
-- 💼 **Less support:** Automated reduces help requests
-- 📚 **More teaching time:** Less troubleshooting
-- 🔄 **Reusable:** Semester after semester
-- 📊 **Proven:** Field-tested in real courses
-
----
-
-## 📖 Additional Resources
-
-### Metasploit Learning
-- [Metasploit Unleashed](https://www.offensive-security.com/metasploit-unleashed/) (Free)
-- [Metasploit Documentation](https://docs.metasploit.com/)
-
-### Ethical Hacking
-- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
-- [CVE Database](https://cve.mitre.org/)
-
-### Certifications
-- Certified Ethical Hacker (CEH)
-- Offensive Security Certified Professional (OSCP)
-- GIAC Penetration Tester (GPEN)
-
----
-
-## 📄 License
-
-This project is licensed for **educational use only**.
-
-See [LICENSE](LICENSE) file for details.
-
-**Key Terms:**
-- ✅ Use for learning and teaching
-- ✅ Modify for educational purposes
-- ✅ Share with students and colleagues
-- ❌ No commercial use
-- ❌ No warranty provided
-- ❌ Authors not liable for misuse
-
----
-
-## 🙏 Acknowledgments
-
-**Technologies Used:**
+Built with:
+- [Kali Linux](https://www.kali.org/) - Penetration testing distribution
+- [Metasploit Framework](https://www.metasploit.com/) - Exploitation framework
 - [VirtualBox](https://www.virtualbox.org/) - Virtualization platform
 - [Vagrant](https://www.vagrantup.com/) - VM automation
-- [Kali Linux](https://www.kali.org/) - Penetration testing OS
-- [Metasploit](https://www.metasploit.com/) - Exploitation framework
-- [Rapid7 Metasploitable3](https://github.com/rapid7/metasploitable3) - Vulnerable VM
-
-**Inspired By:**
-- SANS NetWars
-- HackTheBox
-- Offensive Security Labs
-- University security courses
 
 ---
 
-## 📞 Support
+## License
 
-### Getting Help
+**Educational Use Only** - See [LICENSE](LICENSE) for details.
 
-1. **Read documentation first:**
-   - QUICK_START.md
-   - TROUBLESHOOTING.md
-   - INSTALLATION.md
-
-2. **Check common issues:**
-   - See TROUBLESHOOTING.md
-
-3. **Ask instructor/TA:**
-   - Provide error messages
-   - Include system info
-   - Describe what you tried
-
-4. **Community:**
-   - GitHub Issues (for bugs)
-   - Course forum/Slack
-   - Study group
+This project is intended for authorized security training and education. The authors are not responsible for misuse or illegal activities.
 
 ---
 
-## 🗺️ Roadmap
+## Support
 
-**Current Version:** 1.0
-
-**Planned Features:**
-- [ ] Additional vulnerable applications
-- [ ] Linux target VM
-- [ ] Web application exploits
-- [ ] Wireless attack scenarios
-- [ ] Docker alternative
-- [ ] Cloud deployment option
+- **Issues:** [GitHub Issues](https://github.com/gcheliz/ethical-hacking-student-lab/issues)
+- **Documentation:** See [docs/](docs/) folder
+- **Troubleshooting:** See [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 
 ---
 
-## ⭐ Key Features
+**Version:** 2.0 - HTA Exploit Lab
+**Last Updated:** 2026-01-10
 
-- ✅ **One-command setup** - Complete automation
-- ✅ **Local VMs** - No cloud, no costs
-- ✅ **Fast reset** - 30-second snapshot restore
-- ✅ **Isolated network** - Safe learning environment
-- ✅ **Pre-generated exploits** - Ready to use
-- ✅ **Comprehensive docs** - Step-by-step guides
-- ✅ **Production-ready** - Field-tested
-- ✅ **Cross-platform** - Windows, macOS, Linux
-
----
-
-## 🚦 Getting Started Checklist
-
-- [ ] Install VirtualBox 7.0+
-- [ ] Install Vagrant 2.3+
-- [ ] Clone repository
-- [ ] Run `./setup.sh`
-- [ ] Wait for completion (15-30 min)
-- [ ] Read `docs/QUICK_START.md`
-- [ ] Run first attack demo
-- [ ] Review `LAB_GUIDE.pdf`
-- [ ] Complete learning objectives
-- [ ] Run `./reset.sh` when done
-
----
-
-**Ready to start ethical hacking? Run `./setup.sh` now! 🎯**
-
-Questions? See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) or contact your instructor.
-
----
-
-*Last Updated: 2026-01-08*
-*Version: 1.0*
+**Ready to start? Run `./setup.sh` and begin learning!**

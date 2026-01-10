@@ -26,7 +26,7 @@ REQUIRED_RAM_GB=8
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║                                                                ║${NC}"
 echo -e "${BLUE}║    ETHICAL HACKING LAB - AUTOMATED LOCAL SETUP                 ║${NC}"
-echo -e "${BLUE}║    PDF Exploit Demonstration Environment                       ║${NC}"
+echo -e "${BLUE}║    HTA Exploit - Fake PDF Attack                               ║${NC}"
 echo -e "${BLUE}║                                                                ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo
@@ -34,7 +34,7 @@ echo
 # ============================================================================
 # STEP 1: Check Prerequisites
 # ============================================================================
-echo -e "${YELLOW}[1/8] Checking prerequisites...${NC}"
+echo -e "${YELLOW}[1/7] Checking prerequisites...${NC}"
 
 # Check VirtualBox
 if ! command -v VBoxManage &> /dev/null; then
@@ -77,91 +77,21 @@ fi
 echo
 
 # ============================================================================
-# STEP 2: Extract Adobe Reader from ZIP archive
+# STEP 2: Prepare Exploits Directory
 # ============================================================================
-echo -e "${YELLOW}[2/8] Preparing Adobe Reader installer...${NC}"
+echo -e "${YELLOW}[2/7] Preparing exploits directory...${NC}"
 
-ADOBE_PATH="resources/AdobeReader_9.5.exe"
-ADOBE_ZIP="resources/AdobeReader_9.5.zip"
-
-# Ensure resources directory exists
-mkdir -p resources
-
-# Check if extracted file already exists
-if [ -f "$ADOBE_PATH" ]; then
-    FILE_SIZE=$(du -m "$ADOBE_PATH" | cut -f1)
-    echo -e "${GREEN}  ✓ Adobe Reader installer ready (${FILE_SIZE}MB)${NC}"
-fi
-
-# If not ready, extract from ZIP
-if [ ! -f "$ADOBE_PATH" ]; then
-    if [ -f "$ADOBE_ZIP" ]; then
-        echo "  Extracting Adobe Reader from ZIP archive..."
-
-        # Create temp directory
-        TEMP_DIR=$(mktemp -d)
-
-        # Extract ZIP
-        if command -v unzip >/dev/null 2>&1; then
-            if unzip -q "$ADOBE_ZIP" -d "$TEMP_DIR"; then
-                # Find the .exe file (could be in subdirectory or with different name)
-                EXTRACTED_EXE=$(find "$TEMP_DIR" -type f -name "*.exe" | head -n 1)
-
-                if [ -n "$EXTRACTED_EXE" ]; then
-                    # Copy to resources with correct name
-                    cp "$EXTRACTED_EXE" "$ADOBE_PATH"
-
-                    # Cleanup temp directory
-                    rm -rf "$TEMP_DIR"
-
-                    # Verify the copied file
-                    FILE_SIZE=$(du -m "$ADOBE_PATH" | cut -f1)
-                    echo -e "${GREEN}  ✓ Extracted successfully (${FILE_SIZE}MB)${NC}"
-                else
-                    echo -e "${RED}✗ No .exe file found in ZIP archive${NC}"
-                    echo ""
-                    echo "The ZIP archive may be empty or corrupted."
-                    echo "Please contact your instructor for the correct AdobeReader_9.5.zip file"
-                    rm -rf "$TEMP_DIR"
-                    exit 1
-                fi
-            else
-                echo -e "${RED}✗ Failed to extract ZIP archive${NC}"
-                rm -rf "$TEMP_DIR"
-                exit 1
-            fi
-        else
-            echo -e "${RED}✗ unzip command not found${NC}"
-            echo "Please install unzip: sudo apt-get install unzip"
-            exit 1
-        fi
-    else
-        echo -e "${RED}✗ Adobe Reader ZIP archive not found!${NC}"
-        echo ""
-        echo "The file resources/AdobeReader_9.5.zip is missing."
-        echo ""
-        echo "Required file: resources/AdobeReader_9.5.zip"
-        echo "Please contact your instructor to obtain this file."
-        echo ""
-        exit 1
-    fi
-fi
-
-# Final verification
-if [ -f "$ADOBE_PATH" ]; then
-    FILE_SIZE=$(du -m "$ADOBE_PATH" | cut -f1)
-    echo -e "${GREEN}  ✓ File verified (${FILE_SIZE}MB)${NC}"
-else
-    echo -e "${RED}✗ Adobe Reader installer not found after extraction${NC}"
-    exit 1
-fi
+# Ensure exploits directory exists
+mkdir -p exploits
+echo -e "${GREEN}  ✓ Exploits directory ready${NC}"
+echo -e "${CYAN}  Payload will be generated automatically by Kali VM${NC}"
 
 echo
 
 # ============================================================================
-# STEP 3: Configure VirtualBox Network
+# STEP 3: Configure VirtualBox Host-Only Network
 # ============================================================================
-echo -e "${YELLOW}[3/8] Configuring VirtualBox network...${NC}"
+echo -e "${YELLOW}[3/7] Configuring VirtualBox Host-Only network...${NC}"
 
 # Check if host-only network exists
 if ! VBoxManage list hostonlyifs | grep -q "vboxnet0"; then
@@ -178,15 +108,16 @@ VBoxManage hostonlyif ipconfig "$NETWORK_NAME" --ip 192.168.56.1 --netmask 255.2
 VBoxManage dhcpserver modify --ifname "$NETWORK_NAME" --disable 2>/dev/null || \
 VBoxManage dhcpserver add --ifname "$NETWORK_NAME" --ip 192.168.56.1 --netmask 255.255.255.0 --lowerip 192.168.56.100 --upperip 192.168.56.200 --disable
 
-echo -e "${GREEN}  ✓ Network configured: 192.168.56.0/24${NC}"
+echo -e "${GREEN}  ✓ Host-Only network configured: 192.168.56.0/24${NC}"
 echo -e "${GREEN}  ✓ Network interface: $NETWORK_NAME${NC}"
 echo
 
 # ============================================================================
 # STEP 4: Build Kali Linux VM
 # ============================================================================
-echo -e "${YELLOW}[4/8] Building Kali Linux VM...${NC}"
+echo -e "${YELLOW}[4/7] Building Kali Linux VM...${NC}"
 echo "  This will take 5-10 minutes..."
+echo "  Note: Kali will reboot during provisioning to start HTTP service"
 echo
 
 cd vagrant
@@ -215,11 +146,10 @@ echo
 # ============================================================================
 # STEP 5: Build Windows VM
 # ============================================================================
-echo -e "${YELLOW}[5/8] Building Windows Server 2008 R2 VM...${NC}"
+echo -e "${YELLOW}[5/7] Building Windows Server 2008 R2 VM...${NC}"
 echo "  This will take 20-30 minutes (downloading and configuring)..."
 echo "  Progress:"
 echo "  - Downloading Windows box"
-echo "  - Installing Adobe Reader 9.5.0"
 echo "  - Disabling all security features"
 echo "  - Configuring network"
 echo
@@ -236,12 +166,10 @@ vagrant up win2k8 --provider virtualbox
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}  ✓ Windows Server VM ready${NC}"
     echo -e "${GREEN}  ✓ IP: $WINDOWS_IP${NC}"
-    echo -e "${GREEN}  ✓ Adobe Reader 9.5.0 installed${NC}"
     echo -e "${GREEN}  ✓ AppLocker disabled${NC}"
     echo -e "${GREEN}  ✓ Windows Firewall disabled${NC}"
     echo -e "${GREEN}  ✓ Windows Defender disabled${NC}"
     echo -e "${GREEN}  ✓ UAC disabled${NC}"
-    echo -e "${GREEN}  ✓ Adobe security disabled${NC}"
 else
     echo -e "${RED}✗ Failed to build Windows VM${NC}"
     exit 1
@@ -252,7 +180,7 @@ echo
 # ============================================================================
 # STEP 6: Verify Connectivity
 # ============================================================================
-echo -e "${YELLOW}[6/8] Verifying network connectivity...${NC}"
+echo -e "${YELLOW}[6/7] Verifying network connectivity...${NC}"
 
 # Test Kali -> Windows
 echo "  Testing Kali → Windows..."
@@ -279,7 +207,7 @@ echo
 # ============================================================================
 # STEP 7: Create Initial Snapshots
 # ============================================================================
-echo -e "${YELLOW}[7/8] Creating snapshots for easy reset...${NC}"
+echo -e "${YELLOW}[7/7] Creating snapshots for easy reset...${NC}"
 
 # Get actual VM names from VirtualBox
 KALI_VM=$(VBoxManage list vms | grep kali | head -1 | awk '{print $1}' | tr -d '"')
@@ -303,19 +231,13 @@ fi
 
 echo
 
-# ============================================================================
-# STEP 8: Verify Exploit Files
-# ============================================================================
-echo -e "${YELLOW}[8/8] Verifying exploit materials...${NC}"
-
-# Check if PDF was generated
-vagrant ssh kali -c "ls -lh ~/.msf4/local/JOAN-ESPINACH-TRD.pdf" 2>/dev/null
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}  ✓ Malicious PDF generated${NC}"
+# Verify EXE payload was generated
+if [ -f "exploits/update_checker.exe" ]; then
+    FILE_SIZE=$(du -h exploits/update_checker.exe | cut -f1)
+    echo -e "${GREEN}  ✓ EXE payload generated: $FILE_SIZE${NC}"
 else
-    echo -e "${YELLOW}  ⚠ PDF not found, generating now...${NC}"
-    vagrant ssh kali -c "cd /vagrant/exploits && ./generate_pdf.sh"
-    echo -e "${GREEN}  ✓ PDF generated${NC}"
+    echo -e "${YELLOW}  ⚠ Payload not found in shared folder yet${NC}"
+    echo -e "${CYAN}  This is normal - payload is generated during Kali provisioning${NC}"
 fi
 
 echo
@@ -347,16 +269,17 @@ echo -e "  ${GREEN}✓${NC} Windows Server 2008 R2 (Target)"
 echo -e "    IP Address:      ${WINDOWS_IP}"
 echo -e "    Username:        vagrant"
 echo -e "    Password:        vagrant"
-echo -e "    Vulnerability:   Adobe Reader 9.5.0"
+echo -e "    Exploitation:    Automated EXE payload"
 echo -e "    Security:        ALL DISABLED (intentionally vulnerable)"
 echo
 echo -e "${CYAN}Network:${NC}"
 echo -e "  ${GREEN}✓${NC} Host-Only Network:  192.168.56.0/24"
-echo -e "  ${GREEN}✓${NC} Connectivity:       Verified"
-echo -e "  ${GREEN}✓${NC} Isolation:          Complete (no internet from VMs)"
+echo -e "  ${GREEN}✓${NC} Connectivity:       Verified (VM-to-VM)"
+echo -e "  ${GREEN}✓${NC} NAT Adapter:        Internet access for provisioning"
 echo
 echo -e "${CYAN}Exploit Materials:${NC}"
-echo -e "  ${GREEN}✓${NC} Malicious PDF:      JOAN-ESPINACH-TRD.pdf"
+echo -e "  ${GREEN}✓${NC} Payload:            update_checker.exe"
+echo -e "  ${GREEN}✓${NC} Auto-Execution:     Configured (scheduled task)"
 echo -e "  ${GREEN}✓${NC} Attack Scripts:     Ready in /vagrant/exploits"
 echo -e "  ${GREEN}✓${NC} Snapshots:          Created for easy reset"
 echo

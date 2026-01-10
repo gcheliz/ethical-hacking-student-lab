@@ -36,10 +36,10 @@ Vagrant.configure("2") do |config|
     # Network - host-only network for VM-to-VM communication
     # NAT adapter (eth0/adapter 1) is added automatically by Vagrant for management
     # Host-only adapter (eth1/adapter 2) is for exploit traffic
-    # Note: auto_config disabled, we configure manually in provisioning for better control
     kali.vm.network "private_network",
       ip: "192.168.56.101",
-      auto_config: false,
+      netmask: "255.255.255.0",
+      auto_config: false,  # Disabled - provisioning script handles configuration
       virtualbox__intnet: false  # Use host-only adapter, not internal network
 
     # Optional: Use host-only network for SSH instead of NAT
@@ -50,7 +50,7 @@ Vagrant.configure("2") do |config|
 
     # VirtualBox provider settings
     kali.vm.provider "virtualbox" do |vb|
-      vb.name = "Kali_PDF_Exploit_Lab_#{random_suffix}"
+      vb.name = "Kali_Exploit_Lab_#{random_suffix}"
       vb.memory = "3072"  # 3GB (increased for Metasploit upgrades)
       vb.cpus = 2
       vb.gui = false  # Headless (use SSH)
@@ -62,7 +62,7 @@ Vagrant.configure("2") do |config|
       vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
     end
 
-    # Shared folders - must be mounted for PDF provisioning
+    # Shared folders - must be mounted for payload provisioning
     kali.vm.synced_folder "../exploits", "/vagrant/exploits",
       owner: "vagrant",
       group: "vagrant",
@@ -71,31 +71,67 @@ Vagrant.configure("2") do |config|
     kali.vm.synced_folder "../docs", "/vagrant/docs",
       mount_options: ["ro"]
 
-    # Provisioning - Configure network FIRST (before anything else)
+    # Provisioning - Configure network (auto_config disabled, script does everything)
     kali.vm.provision "shell",
       path: "provisioning/kali/configure_network_early.sh",
-      name: "Configure host-only network"
+      name: "Configure static IP 192.168.56.101 on eth1"
 
     # Provisioning - Install tools
     kali.vm.provision "shell",
       path: "provisioning/kali/install_tools.sh",
       name: "Install Metasploit and tools"
 
-    # Provisioning - Generate exploit PDFs
+    # Provisioning - Generate HTA exploit (fake PDF)
     kali.vm.provision "shell",
-      path: "provisioning/kali/create_exploits.sh",
+      path: "provisioning/kali/create_hta_exploit.sh",
       privileged: false,  # Run as vagrant user
-      name: "Generate malicious PDFs"
+      name: "Generate HTA exploit (fake PDF)"
 
-    # Provisioning - Setup automatic HTTP server
+    # Provisioning - Setup HTTP server autostart
     kali.vm.provision "shell",
-      path: "provisioning/kali/setup_autostart.sh",
-      name: "Setup automatic PDF HTTP server"
+      path: "provisioning/kali/setup_http_autostart.sh",
+      name: "Setup HTTP server autostart"
 
-    # Provisioning - Verify HTTP server is working
+    # Provisioning - Start HTTP server manually for immediate use
     kali.vm.provision "shell",
-      path: "provisioning/kali/verify_http_server.sh",
-      name: "Verify HTTP server status"
+      privileged: false,
+      name: "Start HTTP server manually",
+      inline: <<-SHELL
+        echo "Starting HTTP server for immediate use..."
+
+        # Wait for eth1 to have the correct IP (max 30 seconds)
+        echo "  Waiting for network interface eth1 (192.168.56.101)..."
+        timeout=30
+        elapsed=0
+        while [ $elapsed -lt $timeout ]; do
+          if ip addr show eth1 2>/dev/null | grep -q '192.168.56.101'; then
+            echo "  ✓ Network interface ready"
+            break
+          fi
+          sleep 2
+          elapsed=$((elapsed + 2))
+        done
+
+        # Verify payload files exist
+        if [ ! -f /home/vagrant/hta_payloads/update.exe ]; then
+          echo "  ⚠ Warning: update.exe not found yet, server will start when available"
+        fi
+
+        # Start HTTP server
+        cd /home/vagrant/hta_payloads || exit 1
+        nohup python3 -m http.server 8080 --bind 192.168.56.101 > /tmp/http_server.log 2>&1 &
+        server_pid=$!
+
+        # Wait and verify server started
+        sleep 3
+        if ss -tuln | grep -q ':8080 '; then
+          echo "  ✓ HTTP server started successfully (PID: $server_pid)"
+          echo "  ✓ Accessible at http://192.168.56.101:8080/"
+        else
+          echo "  ⚠ HTTP server may not be running yet"
+          echo "  Check logs: tail -f /tmp/http_server.log"
+        fi
+      SHELL
   end
 
   # =========================================================================
@@ -121,10 +157,10 @@ Vagrant.configure("2") do |config|
 
     # VirtualBox provider settings
     win.vm.provider "virtualbox" do |vb|
-      vb.name = "Windows_PDF_Target_Lab_#{random_suffix}"
+      vb.name = "Windows_Exploit_Target_#{random_suffix}"
       vb.memory = "4096"
       vb.cpus = 2
-      vb.gui = true  # Need GUI for Adobe Reader
+      vb.gui = true  # GUI enabled (can be set to false for headless)
 
       # GUI optimizations
       vb.customize ["modifyvm", :id, "--vram", "128"]
@@ -136,45 +172,38 @@ Vagrant.configure("2") do |config|
       vb.customize ["modifyvm", :id, "--nictype2", "82540EM"]
     end
 
-    # Shared folder for Windows to access PDFs from Kali
+    # Shared folders
     win.vm.synced_folder "../exploits", "/vagrant/exploits",
       owner: "vagrant",
       group: "vagrant"
 
-    # Copy Adobe Reader installer to VM
-    win.vm.provision "file",
-      source: "../resources/AdobeReader_9.5.exe",
-      destination: "C:\\AdobeReader_9.5.exe"
+    win.vm.synced_folder "../resources", "/vagrant/resources",
+      owner: "vagrant",
+      group: "vagrant"
 
-    # Provisioning Step 1: Disable ALL security
+    # Provisioning Step 1: Verify/Configure Host-Only network
+    win.vm.provision "shell",
+      path: "provisioning/windows/configure_hostonly_network.ps1",
+      privileged: true,
+      name: "Verify Host-Only network configuration"
+
+    # Provisioning Step 2: Disable ALL security
     win.vm.provision "shell",
       path: "provisioning/windows/disable_security.ps1",
       privileged: true,
       name: "Disable Windows security features"
 
-    # Provisioning Step 2: Install Adobe Reader
+    # Provisioning Step 3: Install Adobe Reader (for PDF icon)
     win.vm.provision "shell",
-      path: "provisioning/windows/install_adobe.ps1",
+      path: "provisioning/windows/install_adobe_reader.ps1",
       privileged: true,
-      name: "Install and configure Adobe Reader 9.5.0"
+      name: "Install Adobe Reader 9.0 (for PDF icon social engineering)"
 
-    # Provisioning Step 3: Create desktop shortcuts
+    # Provisioning Step 4: Create desktop shortcuts
     win.vm.provision "shell",
       path: "provisioning/windows/create_shortcuts.ps1",
       privileged: true,
       name: "Create desktop shortcuts"
-
-    # Provisioning Step 4: Test connectivity to Kali
-    win.vm.provision "shell",
-      path: "provisioning/windows/test_kali_connectivity.ps1",
-      privileged: true,
-      name: "Test network connectivity to Kali"
-
-    # Provisioning Step 5: Setup PDF download script
-    win.vm.provision "shell",
-      path: "provisioning/windows/setup_pdf_download.ps1",
-      privileged: true,
-      name: "Setup PDF download script from Kali HTTP server"
 
     # Final Step: Reboot to apply all settings
     win.vm.provision "shell",

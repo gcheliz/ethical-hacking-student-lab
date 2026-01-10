@@ -1,129 +1,152 @@
 #!/bin/bash
-# Configure Network Early - Run before other provisioning
-# Ensures 192.168.56.101 is properly configured on eth1
+################################################################################
+# Configure Static IP for Host-Only Network
+# Ensures eth1 (Host-Only adapter) has correct static IP
+################################################################################
 
-echo "================================================================"
-echo "  Configuring Host-Only Network (Early)"
-echo "================================================================"
-echo
+# Enable verbose output to see what's happening
+set -x
 
 # Expected configuration
 EXPECTED_IP="192.168.56.101"
 NETMASK="255.255.255.0"
-GATEWAY="192.168.56.1"
+IFACE="eth1"  # Host-Only adapter (eth0 is NAT for SSH)
 
-# Find the host-only interface (not the NAT one)
-echo "[1/4] Detecting host-only network interface..."
-for iface in $(ip link show | grep -E "^[0-9]+: (eth|enp)" | awk -F: '{print $2}' | tr -d ' '); do
-    # Skip if it's the NAT interface (10.0.2.x)
-    CURRENT_IP=$(ip addr show "$iface" | grep "inet " | awk '{print $2}' | cut -d'/' -f1)
+echo "================================"
+echo "Static IP Configuration"
+echo "================================"
+echo ""
 
-    if [[ "$CURRENT_IP" =~ ^10\.0\.2\. ]]; then
-        echo "  Skipping $iface (NAT interface: $CURRENT_IP)"
-        continue
-    fi
-
-    # This should be our host-only interface
-    if [ -n "$CURRENT_IP" ]; then
-        IFACE="$iface"
-        echo "  Found: $IFACE with IP $CURRENT_IP"
+# Wait for VirtualBox to create the interface (it might not exist immediately)
+echo "[1/4] Waiting for interface $IFACE to be created..."
+MAX_WAIT=30
+elapsed=0
+while [ $elapsed -lt $MAX_WAIT ]; do
+    if ip link show $IFACE &>/dev/null; then
+        echo "  ✓ Interface $IFACE exists"
         break
     fi
-
-    # Or if it has no IP but exists, assume it's the host-only interface
-    if [ -z "$CURRENT_IP" ]; then
-        IFACE="$iface"
-        echo "  Found: $IFACE (no IP yet)"
-        break
-    fi
+    echo "  Waiting... (${elapsed}s)"
+    sleep 2
+    elapsed=$((elapsed + 2))
 done
 
-if [ -z "$IFACE" ]; then
-    echo "  ERROR: Could not find host-only interface!"
+if ! ip link show $IFACE &>/dev/null; then
+    echo "  ✗ ERROR: Interface $IFACE not found after ${MAX_WAIT}s"
     echo "  Available interfaces:"
-    ip addr show
-    exit 1
+    ip link show
+    exit 0  # Don't block provisioning
 fi
 
-echo
+# Check if network is already configured correctly
+echo "[2/4] Checking current configuration..."
+CURRENT_IP=$(ip addr show $IFACE 2>/dev/null | grep "inet " | awk '{print $2}' | cut -d'/' -f1 || echo "")
 
-# Stop NetworkManager from managing this interface
-echo "[2/6] Disabling NetworkManager for $IFACE..."
-sudo mkdir -p /etc/NetworkManager/conf.d
-sudo tee /etc/NetworkManager/conf.d/99-unmanaged.conf > /dev/null << EOF
-[keyfile]
-unmanaged-devices=interface-name:$IFACE
-EOF
+if [ "$CURRENT_IP" = "$EXPECTED_IP" ]; then
+    echo "  ✓ Static IP already configured"
+    echo "  Interface: $IFACE"
+    echo "  IP: $EXPECTED_IP"
+    echo ""
+    echo "No configuration changes needed!"
+    echo ""
+    exit 0
+fi
 
-# Restart NetworkManager to apply config
-sudo systemctl restart NetworkManager 2>/dev/null || true
+echo "  Current IP: ${CURRENT_IP:-none}"
+echo "  Expected IP: $EXPECTED_IP"
+echo "  Configuring static IP now..."
+echo ""
 
-# Kill any dhclient on this interface
-echo "[3/6] Stopping DHCP client on $IFACE..."
-sudo pkill -f "dhclient.*$IFACE" 2>/dev/null || true
+# Configure static IP
+echo "[3/4] Configuring static IP on $IFACE..."
+
+# Disable NetworkManager/systemd-networkd management of this interface
+echo "  Disabling automatic network management for $IFACE..."
+if systemctl is-active NetworkManager &>/dev/null; then
+    echo "  NetworkManager detected, ignoring $IFACE..."
+    nmcli device set $IFACE managed no || true
+fi
+
+# Bring interface up first
+echo "  Bringing interface up..."
+ip link set $IFACE up
 sleep 1
 
-echo
+# Kill any DHCP clients that might interfere
+echo "  Stopping DHCP clients..."
+pkill dhclient || true
+pkill dhclient6 || true
+sleep 2
 
-# Create persistent configuration file FIRST
-echo "[4/6] Creating persistent network configuration..."
-sudo tee /etc/network/interfaces.d/$IFACE > /dev/null << EOF
-# Host-only network interface for exploit lab
-# Managed by ifupdown, not NetworkManager
+# Remove any existing IP addresses
+echo "  Flushing existing IPs..."
+ip addr flush dev $IFACE
+sleep 1
+
+# Add the static IP
+echo "  Adding IP $EXPECTED_IP/24..."
+ip addr add $EXPECTED_IP/24 dev $IFACE
+echo "  IP add command completed with exit code: $?"
+
+# Ensure interface is up again
+echo "  Ensuring interface is up..."
+ip link set $IFACE up
+sleep 1
+
+# Show current IP state
+echo "  Current IP state on $IFACE:"
+ip addr show $IFACE
+
+# Add route to local subnet (don't change default route - that's for SSH!)
+echo "  Adding route to 192.168.56.0/24..."
+ip route add 192.168.56.0/24 dev $IFACE || echo "  (route might already exist)"
+
+# Wait for configuration to settle
+sleep 2
+
+# Verify configuration
+echo "[4/4] Verifying configuration..."
+CURRENT_IP=$(ip addr show $IFACE 2>/dev/null | grep "inet " | awk '{print $2}' | cut -d'/' -f1 || echo "")
+
+if [ "$CURRENT_IP" != "$EXPECTED_IP" ]; then
+    echo "  ✗ Configuration failed!"
+    echo "  Current IP: $CURRENT_IP"
+    echo ""
+    echo "Network state:"
+    ip addr show $IFACE
+    echo ""
+    echo "This is not critical - you can configure manually:"
+    echo "  sudo ip addr add 192.168.56.101/24 dev eth1"
+    echo "  sudo ip link set eth1 up"
+    echo ""
+    exit 0  # Don't fail provisioning
+fi
+
+echo "  ✓ IP configured successfully: $EXPECTED_IP"
+echo ""
+
+# Make configuration persistent
+echo "Making configuration persistent..."
+cat > /etc/network/interfaces.d/$IFACE << EOF
+# Host-Only Network - Static IP Configuration
+# HTA Exploit Lab
+# NOTE: No gateway - default route stays on eth0 (NAT) for SSH
 auto $IFACE
 iface $IFACE inet static
     address $EXPECTED_IP
     netmask $NETMASK
-    gateway $GATEWAY
     post-up ip route add 192.168.56.0/24 dev $IFACE || true
 EOF
 
-echo "  ✓ Configuration saved to /etc/network/interfaces.d/$IFACE"
-echo
+echo "  ✓ Persistent configuration saved"
 
-# Now configure the interface using ifupdown
-echo "[5/6] Applying configuration with ifupdown..."
-# Bring interface down first if it's up
-sudo ifdown "$IFACE" 2>/dev/null || true
-# Flush any old IP
-sudo ip addr flush dev "$IFACE"
-# Bring it up with the new config
-sudo ifup "$IFACE"
-
-# Verify
-sleep 1
-CURRENT_IP=$(ip addr show "$IFACE" | grep "inet " | awk '{print $2}' | cut -d'/' -f1)
-if [ "$CURRENT_IP" = "$EXPECTED_IP" ]; then
-    echo "  ✓ Interface configured: $IFACE = $EXPECTED_IP"
-else
-    echo "  ✗ Configuration failed! IP is: $CURRENT_IP"
-    echo "  Trying manual configuration as fallback..."
-    sudo ip addr add "$EXPECTED_IP/24" dev "$IFACE" 2>/dev/null
-    sudo ip link set "$IFACE" up
-    sudo ip route add 192.168.56.0/24 dev "$IFACE" 2>/dev/null || true
-
-    # Verify again
-    CURRENT_IP=$(ip addr show "$IFACE" | grep "inet " | awk '{print $2}' | cut -d'/' -f1)
-    if [ "$CURRENT_IP" = "$EXPECTED_IP" ]; then
-        echo "  ✓ Manual configuration successful"
-    else
-        echo "  ✗ Manual configuration also failed!"
-        exit 1
-    fi
-fi
-
-echo
-
-# Prevent the interface from going down
-echo "[6/6] Ensuring interface stays up..."
-sudo ip link set "$IFACE" up
-echo
-
-echo "================================================================"
-echo "  Network Configuration Complete"
-echo "================================================================"
+echo ""
+echo "================================"
+echo "✓ Static IP Configured"
+echo "================================"
 echo "  Interface: $IFACE"
-echo "  IP:        $EXPECTED_IP"
-echo "  Gateway:   $GATEWAY"
-echo "================================================================"
-echo
+echo "  IP: $EXPECTED_IP"
+echo "  Network: 192.168.56.0/24"
+echo "  Note: Default route stays on eth0 (for SSH)"
+echo "================================"
+echo ""

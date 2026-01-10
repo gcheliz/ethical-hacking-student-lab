@@ -1,2 +1,2 @@
-# This directory will contain downloaded resources
-# AdobeReader_9.5.exe will be downloaded by setup.sh
+# This file ensures the resources directory is tracked by git
+# Place AdobeReader_9.5.zip here for PDF icon support
