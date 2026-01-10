@@ -15,18 +15,40 @@ echo "  Force Network Configuration"
 echo "========================================"
 echo
 
+# Wait for VirtualBox to create the network interface
+echo "[1/5] Waiting for network interface to be created by VirtualBox..."
+MAX_WAIT=30
+elapsed=0
+while [ $elapsed -lt $MAX_WAIT ]; do
+    IFACE_COUNT=$(ip -o link show | awk -F': ' '{print $2}' | grep -v "lo" | wc -l)
+    if [ $IFACE_COUNT -ge 2 ]; then
+        echo "  ✓ Found $IFACE_COUNT network interfaces"
+        break
+    fi
+    echo "  Waiting for second interface... (${elapsed}s)"
+    sleep 2
+    elapsed=$((elapsed + 2))
+done
+
 # Find the second network interface (not lo, not the NAT interface)
-echo "[1/4] Finding network interfaces..."
+echo "[2/5] Identifying network interfaces..."
 INTERFACES=$(ip -o link show | awk -F': ' '{print $2}' | grep -v "lo" | head -2)
 ETH0=$(echo "$INTERFACES" | head -1)
 ETH1=$(echo "$INTERFACES" | tail -1)
+
+if [ -z "$ETH1" ] || [ "$ETH0" = "$ETH1" ]; then
+    echo "  ✗ ERROR: Could not find second network interface!"
+    echo "  Available interfaces:"
+    ip link show
+    exit 1
+fi
 
 echo "  First interface (NAT/SSH): $ETH0"
 echo "  Second interface (Host-Only): $ETH1"
 echo
 
 # Check current IP on second interface
-echo "[2/4] Checking current configuration on $ETH1..."
+echo "[3/5] Checking current configuration on $ETH1..."
 CURRENT_IP=$(ip addr show $ETH1 2>/dev/null | grep "inet " | awk '{print $2}' | cut -d'/' -f1 || echo "")
 
 if [ "$CURRENT_IP" = "$EXPECTED_IP" ]; then
@@ -43,7 +65,7 @@ echo "  Need to configure: $EXPECTED_IP"
 echo
 
 # Configure the interface
-echo "[3/4] Configuring $ETH1..."
+echo "[4/5] Configuring $ETH1..."
 
 # Stop any DHCP clients
 pkill dhclient 2>/dev/null || true
@@ -81,7 +103,7 @@ echo "  ✓ IP configured: $EXPECTED_IP"
 echo
 
 # Make persistent
-echo "[4/4] Making configuration persistent..."
+echo "[5/5] Making configuration persistent..."
 
 cat > /etc/network/interfaces.d/$ETH1 << EOF
 # Host-Only Network - Static IP Configuration
