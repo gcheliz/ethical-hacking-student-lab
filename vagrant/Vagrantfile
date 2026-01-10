@@ -8,7 +8,12 @@ Vagrant.configure("2") do |config|
   # =========================================================================
 
   config.vm.box_check_update = false
-  config.vm.boot_timeout = 900  # 15 minutes for slower machines
+
+  # LOW RESOURCE MODE - Set environment variable LOW_RESOURCE=1 for machines with limited RAM/CPU
+  low_resource = ENV['LOW_RESOURCE'] == '1'
+
+  # Boot timeout - increase for low resource machines
+  config.vm.boot_timeout = low_resource ? 1800 : 900  # 30 min for low resource, 15 min normal
 
   # Disable guest additions version check (intentionally using old vulnerable box)
   if Vagrant.has_plugin?("vagrant-vbguest")
@@ -29,9 +34,9 @@ Vagrant.configure("2") do |config|
     # SSH settings - Kali can be slow to boot
     kali.ssh.insert_key = true
     kali.ssh.forward_agent = false
-    kali.ssh.connect_timeout = 600  # 10 minutes (increased for package upgrades)
+    kali.ssh.connect_timeout = low_resource ? 1200 : 600  # 20 min for low resource, 10 min normal
     kali.ssh.keep_alive = true
-    kali.vm.boot_timeout = 900  # 15 minutes for Kali
+    kali.vm.boot_timeout = low_resource ? 1800 : 900  # 30 min for low resource, 15 min normal
 
     # Network - host-only network for VM-to-VM communication
     # NAT adapter (eth0/adapter 1) is added automatically by Vagrant for management
