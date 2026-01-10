@@ -1,6 +1,6 @@
 #!/bin/bash
 ################################################################################
-# Create VirtualBox NAT Network for LNK Exploit Lab
+# Create VirtualBox NAT Network for HTA Exploit Lab
 # This script creates a single NAT Network that provides both:
 # - VM-to-VM communication
 # - Internet access for provisioning
@@ -17,7 +17,7 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 # NAT Network configuration
-NAT_NETWORK_NAME="LNK_Exploit_Lab_Network"
+NAT_NETWORK_NAME="HTA_Exploit_Lab_Network"
 NAT_NETWORK_CIDR="192.168.56.0/24"
 NAT_NETWORK_IP="192.168.56.1"
 

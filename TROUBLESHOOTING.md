@@ -636,7 +636,7 @@ ls -la /home/vagrant/.msf4/local/
 # Should see shell.ps1 and HTA file
 
 # Check Windows
-vagrant winrm win2k8 -c "dir C:\vagrant\exploits\lnk"
+vagrant winrm win2k8 -c "dir C:\vagrant\exploits\hta"
 # Should see HTA file
 ```
 

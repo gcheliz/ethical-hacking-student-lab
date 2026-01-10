@@ -1,11 +1,11 @@
 # Learning Objectives
-## Ethical Hacking LNK Exploit Lab
+## Ethical Hacking HTA Exploit Lab
 
 ---
 
 ## Overview
 
-This lab demonstrates a real-world social engineering attack using malicious Windows shortcut files (.lnk) disguised as PDF documents to gain unauthorized access to a Windows system. Students will learn both offensive and defensive security concepts.
+This lab demonstrates a real-world social engineering attack using malicious HTML Application files (.hta) disguised as PDF documents to gain unauthorized access to a Windows system. Students will learn both offensive and defensive security concepts.
 
 ---
 
@@ -20,12 +20,12 @@ This lab demonstrates a real-world social engineering attack using malicious Win
 
 **Specific Skills:**
 - Understanding file extension spoofing
-- Recognizing Windows shortcut file manipulation
+- Recognizing HTML Application file manipulation
 - Identifying social engineering tactics
 
 **Lab Application:**
-- LNK files with PDF icons and fake extensions
-- How "Q4_Financial_Report.pdf.lnk" appears as "Q4_Financial_Report.pdf"
+- HTA files with PDF icons and fake extensions
+- How "Q4_Financial_Report.pdf.hta" appears as "Q4_Financial_Report.pdf"
 - Understanding visual deception techniques
 
 ---
@@ -39,12 +39,12 @@ This lab demonstrates a real-world social engineering attack using malicious Win
 
 **Specific Skills:**
 - Creating malicious payloads
-- Understanding LNK file structure and manipulation
+- Understanding HTA file structure and VBScript
 - Delivery mechanisms (email, USB, downloads)
 
 **Lab Application:**
-- Generating LNK files with pylnk3
-- Embedding PowerShell commands in shortcuts
+- Generating HTA files with embedded VBScript
+- Creating executable payloads with msfvenom
 - Creating convincing fake documents
 
 ---
@@ -173,13 +173,13 @@ This lab demonstrates a real-world social engineering attack using malicious Win
 By completing this lab, students should be able to:
 
 ### Knowledge Level (Understanding)
-- [ ] Explain how LNK file social engineering works
+- [ ] Explain how HTA file social engineering works
 - [ ] Describe the exploitation process
 - [ ] Identify security controls and their purposes
 - [ ] Understand reverse shell concepts
 
 ### Application Level (Doing)
-- [ ] Generate malicious LNK files with embedded PowerShell
+- [ ] Generate malicious HTA files with embedded VBScript
 - [ ] Configure and run exploit listeners
 - [ ] Navigate Meterpreter sessions
 - [ ] Gather system information from compromised hosts
@@ -250,7 +250,7 @@ By completing this lab, students should be able to:
 
 ### Minimum Competency (70%)
 - Successfully set up lab environment
-- Execute basic LNK exploit
+- Execute basic HTA exploit
 - Obtain Meterpreter shell
 - Run basic post-exploitation commands
 
@@ -267,7 +267,7 @@ By completing this lab, students should be able to:
 - Demonstrate bonus challenges
 
 ### Expert (100%)
-- Create custom malicious LNK files
+- Create custom malicious HTA files
 - Automate full attack chain
 - Implement and test defenses
 - Present findings professionally
@@ -304,10 +304,9 @@ By completing this lab, students should be able to:
 
 ### Included Documentation
 - README.md - Main lab guide
-- INSTALLATION.md - Setup instructions
 - HOW_TO_USE.md - Usage scenarios
 - TROUBLESHOOTING.md - Common issues
-- LNK_EXPLOIT_GUIDE.md - Technical details
+- exploits/hta/README.md - Technical details
 
 ### External Resources
 - Metasploit Unleashed (free course)
