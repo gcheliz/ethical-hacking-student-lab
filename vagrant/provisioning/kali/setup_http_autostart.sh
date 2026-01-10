@@ -24,13 +24,24 @@ echo "[1/3] Creating HTTP server wrapper script..."
 # Create a wrapper script that waits for network before starting
 sudo tee /usr/local/bin/start-hta-http-server.sh > /dev/null << 'WRAPPER_EOF'
 #!/bin/bash
-# Wait for network interface to be ready
+# HTTP Server wrapper - ensures payload directory and network are ready
+# This directory is VM-local, NOT a shared folder (immune to Windows VM operations)
+PAYLOAD_DIR="/home/vagrant/hta_payloads"
 MAX_WAIT=60
+
+# Ensure payload directory exists and is owned by vagrant
+# This is a VM-local directory, completely independent of shared folders
+if [ ! -d "$PAYLOAD_DIR" ]; then
+    mkdir -p "$PAYLOAD_DIR"
+    chown vagrant:vagrant "$PAYLOAD_DIR"
+fi
+
+# Wait for network interface to be ready
 elapsed=0
 while [ $elapsed -lt $MAX_WAIT ]; do
     if ip addr show eth1 2>/dev/null | grep -q '192.168.56.101'; then
-        # Network ready, start server
-        cd /home/vagrant/hta_payloads
+        # Network ready, start server from VM-local directory
+        cd "$PAYLOAD_DIR" || exit 1
         exec /usr/bin/python3 -m http.server 8080 --bind 192.168.56.101
     fi
     sleep 2
@@ -48,7 +59,7 @@ echo "[2/3] Creating systemd service..."
 
 sudo tee /etc/systemd/system/${SERVICE_NAME}.service > /dev/null << EOF
 [Unit]
-Description=HTA Exploit HTTP Server
+Description=HTA Exploit HTTP Server (VM-local, no shared folders)
 After=network-online.target
 Wants=network-online.target
 
@@ -57,8 +68,13 @@ Type=simple
 User=vagrant
 Group=vagrant
 ExecStart=/usr/local/bin/start-hta-http-server.sh
-Restart=always
-RestartSec=10
+# Only restart on failure, not on clean shutdown
+Restart=on-failure
+# Wait longer between restart attempts to avoid spam during network issues
+RestartSec=15
+# Give up after 5 restart attempts within 180 seconds
+StartLimitBurst=5
+StartLimitIntervalSec=180
 StandardOutput=journal
 StandardError=journal
 
@@ -108,10 +124,12 @@ echo "  Directory: ${PAYLOAD_DIR}"
 echo "  Wrapper: /usr/local/bin/start-hta-http-server.sh"
 echo
 echo "How it works:"
+echo "  - Serves from /home/vagrant/hta_payloads (VM-local, NOT shared)"
 echo "  - Systemd starts wrapper script on boot"
-echo "  - Wrapper waits for network interface (eth1)"
+echo "  - Wrapper ensures directory exists and waits for network"
 echo "  - Then starts Python HTTP server"
-echo "  - Auto-restarts if it crashes"
+echo "  - Auto-restarts on failure (max 5 times in 3 minutes)"
+echo "  - Immune to Windows VM restarts and shared folder operations"
 echo
 echo "To check status:"
 echo "  sudo systemctl status ${SERVICE_NAME}"
