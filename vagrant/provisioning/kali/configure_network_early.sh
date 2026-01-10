@@ -14,8 +14,29 @@ echo "Static IP Configuration"
 echo "================================"
 echo ""
 
+# Wait for VirtualBox to create the interface (it might not exist immediately)
+echo "[1/4] Waiting for interface $IFACE to be created..."
+MAX_WAIT=30
+elapsed=0
+while [ $elapsed -lt $MAX_WAIT ]; do
+    if ip link show $IFACE &>/dev/null; then
+        echo "  ✓ Interface $IFACE exists"
+        break
+    fi
+    echo "  Waiting... (${elapsed}s)"
+    sleep 2
+    elapsed=$((elapsed + 2))
+done
+
+if ! ip link show $IFACE &>/dev/null; then
+    echo "  ✗ ERROR: Interface $IFACE not found after ${MAX_WAIT}s"
+    echo "  Available interfaces:"
+    ip link show
+    exit 0  # Don't block provisioning
+fi
+
 # Check if network is already configured correctly
-echo "[1/3] Checking current configuration..."
+echo "[2/4] Checking current configuration..."
 CURRENT_IP=$(ip addr show $IFACE 2>/dev/null | grep "inet " | awk '{print $2}' | cut -d'/' -f1 || echo "")
 
 if [ "$CURRENT_IP" = "$EXPECTED_IP" ]; then
@@ -34,7 +55,7 @@ echo "  Configuring static IP now..."
 echo ""
 
 # Configure static IP
-echo "[2/3] Configuring static IP on $IFACE..."
+echo "[3/4] Configuring static IP on $IFACE..."
 
 # Bring interface up first
 echo "  Bringing interface up..."
@@ -64,7 +85,7 @@ ip route add 192.168.56.0/24 dev $IFACE 2>/dev/null
 sleep 2
 
 # Verify configuration
-echo "[3/3] Verifying configuration..."
+echo "[4/4] Verifying configuration..."
 CURRENT_IP=$(ip addr show $IFACE 2>/dev/null | grep "inet " | awk '{print $2}' | cut -d'/' -f1 || echo "")
 
 if [ "$CURRENT_IP" != "$EXPECTED_IP" ]; then
