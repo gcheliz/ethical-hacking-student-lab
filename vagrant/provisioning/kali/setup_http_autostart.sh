@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
 # Setup HTTP Server Autostart
-# Creates systemd service to start HTTP server on boot for LNK exploit
+# Creates systemd service to start HTTP server on boot for HTA exploit
 ################################################################################
 
 set -e
@@ -13,8 +13,8 @@ echo
 
 # Configuration
 HTTP_PORT="8080"
-PAYLOAD_DIR="/home/vagrant/lnk_payloads"  # Non-shared directory for generated files
-SERVICE_NAME="lnk-http-server"
+PAYLOAD_DIR="/home/vagrant/hta_payloads"  # Non-shared directory for generated files
+SERVICE_NAME="hta-http-server"
 
 # ============================================================================
 # Create systemd service file
@@ -23,7 +23,7 @@ echo "[1/2] Creating systemd service..."
 
 sudo tee /etc/systemd/system/${SERVICE_NAME}.service > /dev/null << EOF
 [Unit]
-Description=LNK Exploit HTTP Server
+Description=HTA Exploit HTTP Server
 After=network-online.target
 Wants=network-online.target
 

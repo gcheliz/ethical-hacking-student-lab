@@ -86,11 +86,11 @@ Vagrant.configure("2") do |config|
       path: "provisioning/kali/install_tools.sh",
       name: "Install Metasploit and tools"
 
-    # Provisioning - Generate LNK exploit (fake PDF)
+    # Provisioning - Generate HTA exploit (fake PDF)
     kali.vm.provision "shell",
-      path: "provisioning/kali/create_lnk_exploit.sh",
+      path: "provisioning/kali/create_hta_exploit.sh",
       privileged: false,  # Run as vagrant user
-      name: "Generate LNK exploit (fake PDF)"
+      name: "Generate HTA exploit (fake PDF)"
 
     # Provisioning - Setup HTTP server autostart
     kali.vm.provision "shell",
