@@ -164,13 +164,19 @@ Vagrant.configure("2") do |config|
       privileged: true,
       name: "Disable Windows security features"
 
-    # Provisioning Step 3: Create desktop shortcuts
+    # Provisioning Step 3: Install Adobe Reader (for PDF icon)
+    win.vm.provision "shell",
+      path: "provisioning/windows/install_adobe_reader.ps1",
+      privileged: true,
+      name: "Install Adobe Reader 9.0 (for PDF icon social engineering)"
+
+    # Provisioning Step 4: Create desktop shortcuts
     win.vm.provision "shell",
       path: "provisioning/windows/create_shortcuts.ps1",
       privileged: true,
       name: "Create desktop shortcuts"
 
-    # Provisioning Step 4: Test connectivity to Kali
+    # Provisioning Step 5: Test connectivity to Kali
     win.vm.provision "shell",
       path: "provisioning/windows/test_kali_connectivity.ps1",
       privileged: true,
