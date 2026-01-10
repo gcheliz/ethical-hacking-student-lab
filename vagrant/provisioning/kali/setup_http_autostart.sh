@@ -32,13 +32,10 @@ Type=simple
 User=vagrant
 Group=vagrant
 WorkingDirectory=${PAYLOAD_DIR}
-# Wait for Host-Only network interface to have IP 192.168.56.101
-ExecStartPre=/bin/bash -c 'timeout 60 bash -c "until ip addr show eth1 | grep -q 192.168.56.101; do sleep 2; done"'
-# Wait for payload file to exist
-ExecStartPre=/bin/bash -c 'timeout 30 bash -c "until [ -f ${PAYLOAD_DIR}/update.exe ]; do sleep 1; done"'
+# Simple retry logic: If network/files not ready, service will fail and restart
 ExecStart=/usr/bin/python3 -m http.server ${HTTP_PORT} --bind 192.168.56.101
 Restart=always
-RestartSec=10
+RestartSec=5
 StandardOutput=journal
 StandardError=journal
 
