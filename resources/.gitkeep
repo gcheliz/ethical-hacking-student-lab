@@ -1,2 +1,2 @@
-# This directory is for lab resources
-# For the LNK exploit lab, no additional resources are required
+# This file ensures the resources directory is tracked by git
+# Place AdobeReader_9.5.zip here for PDF icon support
