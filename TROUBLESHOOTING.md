@@ -375,7 +375,7 @@ cd /vagrant/vagrant/provisioning/kali
 ### Issue: HTA file not created
 
 **Symptoms:**
-- `Q4_Financial_Report.pdf.lnk` missing
+- `Joan_Espinach_hta_social_engineering.pdf.lnk` missing
 - Provisioning completed but no HTA
 
 **Solution:**

@@ -26,12 +26,12 @@ sequenceDiagram
     participant M as Metasploit
 
     A->>A: Generate update.exe (Meterpreter)
-    A->>A: Create Q4_Financial_Report.hta
+    A->>A: Create Joan_Espinach_hta_social_engineering.hta
     A->>H: Start HTTP server :8080
     A->>M: Start listener :4444
 
     V->>H: Download HTA file
-    H-->>V: Q4_Financial_Report.hta
+    H-->>V: Joan_Espinach_hta_social_engineering.hta
     V->>V: Double-click HTA
     V->>V: VBScript executes
     V->>H: Download update.exe
@@ -45,7 +45,7 @@ sequenceDiagram
 
 | Stage | Victim Perspective | Actual Activity |
 |-------|-------------------|-----------------|
-| **Download** | "Q4_Financial_Report.pdf" with PDF icon | HTA file with .hta extension hidden |
+| **Download** | "Joan_Espinach_hta_social_engineering.pdf" with PDF icon | HTA file with .hta extension hidden |
 | **Double-click** | Brief loading message, window closes | VBScript downloads and executes EXE |
 | **Execution** | Nothing visible (silent) | Meterpreter payload connects to attacker |
 | **Result** | Normal system operation | Remote access granted to attacker |
@@ -69,7 +69,7 @@ cd /vagrant/exploits/hta
 ./start_hta_attack.sh
 
 # 2. Share download link
-echo "http://192.168.56.101:8080/Q4_Financial_Report_EXE.pdf.hta"
+echo "http://192.168.56.101:8080/Joan_Espinach_hta_social_engineering_EXE.pdf.hta"
 ```
 
 **Email Template:**
@@ -81,7 +81,7 @@ Dear Team,
 Please review the attached Q4 financial report before
 tomorrow's board meeting.
 
-Download: http://192.168.56.101:8080/Q4_Financial_Report_EXE.pdf.hta
+Download: http://192.168.56.101:8080/Joan_Espinach_hta_social_engineering_EXE.pdf.hta
 
 Best regards,
 CFO
@@ -113,7 +113,7 @@ graph LR
 ```bash
 # 1. Copy HTA to USB drive (from Kali shared folder)
 # On host: /vagrant/exploits/hta/ is shared
-# Copy Q4_Financial_Report_EXE.pdf.hta to USB
+# Copy Joan_Espinach_hta_social_engineering_EXE.pdf.hta to USB
 
 # 2. Label USB: "Executive Salaries 2024" or "Confidential HR"
 
@@ -181,7 +181,7 @@ graph TB
 ```mermaid
 graph LR
     A[create_exe_payload.sh] -->|Generates| B[update.exe]
-    A -->|Generates| C[Q4_Financial_Report_EXE.pdf.hta]
+    A -->|Generates| C[Joan_Espinach_hta_social_engineering_EXE.pdf.hta]
     A -->|Generates| D[Test_EXE_Download.hta]
 
     E[start_hta_attack.sh] -->|Checks| B
