@@ -5,6 +5,65 @@ This guide covers common issues with the HTA exploit lab and their solutions.
 
 ---
 
+## Quick Diagnostic Flowchart
+
+Use this flowchart to quickly identify your issue:
+
+```mermaid
+graph TD
+    START{What's the problem?} -->|Setup fails| SETUP_BRANCH{Which error?}
+    START -->|VMs won't communicate| NETWORK_BRANCH{Which test fails?}
+    START -->|HTA exploit doesn't work| EXPLOIT_BRANCH{What happens?}
+    START -->|No Meterpreter session| METASPLOIT_BRANCH{Which stage?}
+    START -->|Performance issues| PERF_BRANCH{What's slow?}
+
+    SETUP_BRANCH -->|VirtualBox not found| S1[Install VirtualBox<br/>Setup Issues #1]
+    SETUP_BRANCH -->|Vagrant not found| S2[Install Vagrant<br/>Setup Issues #2]
+    SETUP_BRANCH -->|VT-x not enabled| S3[Enable in BIOS<br/>Setup Issues #4]
+    SETUP_BRANCH -->|Disk space| S4[Free up 40GB<br/>Setup Issues #3]
+
+    NETWORK_BRANCH -->|Can't ping Windows| N1[Check Host-Only network<br/>Network Problems #1]
+    NETWORK_BRANCH -->|Can't reach HTTP| N2[Check HTTP server<br/>Network Problems #3]
+    NETWORK_BRANCH -->|Kali has wrong IP| N3[Reconfigure network<br/>Network Problems #2]
+
+    EXPLOIT_BRANCH -->|HTA doesn't execute| E1[Check file association<br/>HTA Exploit Problems #3]
+    EXPLOIT_BRANCH -->|Downloads but fails| E2[Check payload syntax<br/>HTA Exploit Problems #4]
+    EXPLOIT_BRANCH -->|HTA not created| E3[Run create_exe_payload.sh<br/>HTA Exploit Problems #1]
+
+    METASPLOIT_BRANCH -->|Listener won't start| M1[Port 4444 in use<br/>Metasploit Issues #1]
+    METASPLOIT_BRANCH -->|Session closes immediately| M2[Use AutoRunScript<br/>Metasploit Issues #2]
+    METASPLOIT_BRANCH -->|Stuck at 'Sending stage'| M3[Check firewall<br/>Metasploit Issues #3]
+
+    PERF_BRANCH -->|VMs very slow| P1[Allocate more resources<br/>Performance Issues #1]
+    PERF_BRANCH -->|Disk space low| P2[Clean up Vagrant boxes<br/>Performance Issues #2]
+
+    style START fill:#3498db,color:#fff
+    style S1 fill:#e74c3c,color:#fff
+    style S2 fill:#e74c3c,color:#fff
+    style S3 fill:#e74c3c,color:#fff
+    style S4 fill:#e74c3c,color:#fff
+    style N1 fill:#f39c12,color:#fff
+    style N2 fill:#f39c12,color:#fff
+    style N3 fill:#f39c12,color:#fff
+    style E1 fill:#9b59b6,color:#fff
+    style E2 fill:#9b59b6,color:#fff
+    style E3 fill:#9b59b6,color:#fff
+    style M1 fill:#1abc9c,color:#fff
+    style M2 fill:#1abc9c,color:#fff
+    style M3 fill:#1abc9c,color:#fff
+    style P1 fill:#34495e,color:#fff
+    style P2 fill:#34495e,color:#fff
+```
+
+**Color Legend:**
+- 🔴 Red: Setup/Installation issues
+- 🟠 Orange: Network connectivity issues
+- 🟣 Purple: HTA exploit issues
+- 🟢 Teal: Metasploit/listener issues
+- ⚫ Dark: Performance/resource issues
+
+---
+
 ## Table of Contents
 
 1. [Setup Issues](#setup-issues)
