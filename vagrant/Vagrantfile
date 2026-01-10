@@ -210,12 +210,6 @@ Vagrant.configure("2") do |config|
       privileged: true,
       name: "Create desktop shortcuts"
 
-    # Provisioning Step 5: Test connectivity to Kali
-    win.vm.provision "shell",
-      path: "provisioning/windows/test_kali_connectivity.ps1",
-      privileged: true,
-      name: "Test network connectivity to Kali"
-
     # Final Step: Reboot to apply all settings
     win.vm.provision "shell",
       inline: "shutdown /r /t 30 /c 'Rebooting to apply all settings. VM will restart in 30 seconds.'",
