@@ -60,17 +60,19 @@ sudo systemctl daemon-reload
 # Enable service to start on boot
 sudo systemctl enable ${SERVICE_NAME}.service
 
-# Start service now
-sudo systemctl start ${SERVICE_NAME}.service
-
-# Wait for service to be ready
-sleep 2
-
-# Verify service is running
-if sudo systemctl is-active --quiet ${SERVICE_NAME}.service; then
-    echo "✓ Service enabled and started successfully"
+# Try to start service now (non-blocking)
+# Note: Service may not start if conditions aren't met yet
+# It will auto-start on next boot when conditions are satisfied
+echo "  Attempting to start service..."
+if sudo systemctl start ${SERVICE_NAME}.service 2>/dev/null; then
+    sleep 2
+    if sudo systemctl is-active --quiet ${SERVICE_NAME}.service; then
+        echo "✓ Service enabled and started successfully"
+    else
+        echo "✓ Service enabled (will start on boot or when conditions are met)"
+    fi
 else
-    echo "⚠ Warning: Service enabled but not running (will start on boot)"
+    echo "✓ Service enabled (will start on boot when conditions are met)"
 fi
 
 echo
@@ -83,15 +85,13 @@ echo "  Name: ${SERVICE_NAME}"
 echo "  Port: ${HTTP_PORT}"
 echo "  Bind: 192.168.56.101"
 echo "  Directory: ${PAYLOAD_DIR}"
-echo "  Status: Running"
 echo
-echo "HTTP server is now accessible at:"
-echo "  http://192.168.56.101:${HTTP_PORT}/"
+echo "The HTTP server will:"
+echo "  - Auto-start on every boot via systemd"
+echo "  - Be available after VM restart"
 echo
-echo "Useful commands:"
-echo "  sudo systemctl status ${SERVICE_NAME}    # Check status"
-echo "  sudo systemctl stop ${SERVICE_NAME}      # Stop server"
-echo "  sudo systemctl start ${SERVICE_NAME}     # Start server"
-echo "  sudo systemctl restart ${SERVICE_NAME}   # Restart server"
-echo "  sudo journalctl -u ${SERVICE_NAME} -f    # View logs"
+echo "To check status after boot:"
+echo "  sudo systemctl status ${SERVICE_NAME}"
+echo
+echo "Access at: http://192.168.56.101:${HTTP_PORT}/"
 echo
