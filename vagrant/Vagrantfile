@@ -9,11 +9,9 @@ Vagrant.configure("2") do |config|
 
   config.vm.box_check_update = false
 
-  # LOW RESOURCE MODE - Set environment variable LOW_RESOURCE=1 for machines with limited RAM/CPU
-  low_resource = ENV['LOW_RESOURCE'] == '1'
-
-  # Boot timeout - increase for low resource machines
-  config.vm.boot_timeout = low_resource ? 1800 : 900  # 30 min for low resource, 15 min normal
+  # Optimized for low resource machines (default)
+  # Higher timeouts prevent KeepAliveDisconnected errors on slower hardware
+  config.vm.boot_timeout = 1800  # 30 minutes
 
   # Disable guest additions version check (intentionally using old vulnerable box)
   if Vagrant.has_plugin?("vagrant-vbguest")
@@ -31,12 +29,12 @@ Vagrant.configure("2") do |config|
     kali.vm.box = "kalilinux/rolling"
     kali.vm.hostname = "kali-attacker"
 
-    # SSH settings - Kali can be slow to boot
+    # SSH settings - Kali can be slow to boot on low resource machines
     kali.ssh.insert_key = true
     kali.ssh.forward_agent = false
-    kali.ssh.connect_timeout = low_resource ? 1200 : 600  # 20 min for low resource, 10 min normal
+    kali.ssh.connect_timeout = 1200  # 20 minutes (generous for slow machines)
     kali.ssh.keep_alive = true
-    kali.vm.boot_timeout = low_resource ? 1800 : 900  # 30 min for low resource, 15 min normal
+    kali.vm.boot_timeout = 1800  # 30 minutes
 
     # Network - host-only network for VM-to-VM communication
     # NAT adapter (eth0/adapter 1) is added automatically by Vagrant for management
@@ -53,11 +51,11 @@ Vagrant.configure("2") do |config|
     # kali.ssh.host = "192.168.56.101"
     # kali.ssh.port = 22
 
-    # VirtualBox provider settings
+    # VirtualBox provider settings - optimized for low resource machines
     kali.vm.provider "virtualbox" do |vb|
       vb.name = "Kali_Exploit_Lab_#{random_suffix}"
-      vb.memory = "3072"  # 3GB (increased for Metasploit upgrades)
-      vb.cpus = 2
+      vb.memory = "2048"  # 2GB (reduced for low resource machines)
+      vb.cpus = 1  # 1 CPU (reduced for low resource machines)
       vb.gui = false  # Headless (use SSH)
 
       # Performance optimizations
@@ -65,6 +63,8 @@ Vagrant.configure("2") do |config|
       vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
       vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
       vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
+      vb.customize ["modifyvm", :id, "--ioapic", "on"]
+      vb.customize ["modifyvm", :id, "--pae", "on"]
     end
 
     # Shared folders - must be mounted for payload provisioning
@@ -147,8 +147,13 @@ Vagrant.configure("2") do |config|
     win.vm.box = "rapid7/metasploitable3-win2k8"
     win.vm.hostname = "win-target"
     win.vm.communicator = "winrm"
-    win.vm.boot_timeout = 600
-    win.winrm.timeout = 1800  # 30 minutes for slow operations
+
+    # Boot and WinRM timeouts - critical for low resource machines
+    # These settings prevent KeepAliveDisconnected errors during provisioning
+    win.vm.boot_timeout = 1800  # 30 minutes
+    win.winrm.timeout = 3600  # 60 minutes (provisioning can take this long on slow machines)
+    win.winrm.retry_limit = 200  # Increase retry attempts
+    win.winrm.retry_delay = 10  # Wait 10 seconds between retries
 
     # Network - host-only network for VM-to-VM communication
     # NAT adapter is added automatically by Vagrant for WinRM management
@@ -160,11 +165,11 @@ Vagrant.configure("2") do |config|
       auto_config: true,
       virtualbox__intnet: false  # Use host-only adapter, not internal network
 
-    # VirtualBox provider settings
+    # VirtualBox provider settings - optimized for low resource machines
     win.vm.provider "virtualbox" do |vb|
       vb.name = "Windows_Exploit_Target_#{random_suffix}"
-      vb.memory = "4096"
-      vb.cpus = 2
+      vb.memory = "3072"  # 3GB (reduced from 4GB for low resource machines)
+      vb.cpus = 1  # 1 CPU (reduced from 2 for low resource machines)
       vb.gui = true  # GUI enabled (can be set to false for headless)
 
       # GUI optimizations
@@ -172,9 +177,11 @@ Vagrant.configure("2") do |config|
       vb.customize ["modifyvm", :id, "--clipboard", "bidirectional"]
       vb.customize ["modifyvm", :id, "--draganddrop", "bidirectional"]
 
-      # Performance
+      # Performance optimizations for low resource machines
       vb.customize ["modifyvm", :id, "--nictype1", "82540EM"]
       vb.customize ["modifyvm", :id, "--nictype2", "82540EM"]
+      vb.customize ["modifyvm", :id, "--ioapic", "on"]
+      vb.customize ["modifyvm", :id, "--pae", "on"]
     end
 
     # Shared folders

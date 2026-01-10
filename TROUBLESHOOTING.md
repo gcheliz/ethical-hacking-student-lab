@@ -78,6 +78,57 @@ graph TD
 
 ## Setup Issues
 
+### Issue: "An existing connection was forcibly closed by the remote host" during Windows VM build
+
+**Symptoms:**
+```
+==> win2k8: Running provisioner: shell...
+An existing connection was forcibly closed by the remote host
+```
+- Occurs during Windows VM provisioning in setup.ps1
+- VM build fails or hangs during provisioning steps
+- Also called "KeepAliveDisconnected" error
+
+**Root Cause:**
+- Low resource machines (limited RAM/CPU) take longer to provision
+- WinRM connection times out during long-running provisioning scripts
+- Default timeouts are too aggressive for slower hardware
+
+**Solution (Already Applied):**
+The Vagrantfile has been optimized for low resource machines with:
+- Extended boot timeout: 30 minutes (up from 10 minutes)
+- Extended WinRM timeout: 60 minutes (up from 30 minutes)
+- Increased retry attempts: 200 retries with 10 second delays
+- Reduced VM resources: Kali (2GB/1CPU), Windows (3GB/1CPU)
+
+**If Still Failing:**
+1. Close all other applications to free up RAM
+2. Disable antivirus temporarily during provisioning
+3. Check available memory: Windows needs at least 3GB free
+4. Run only one VM at a time:
+   ```powershell
+   cd vagrant
+   vagrant up kali    # Wait for completion
+   vagrant up win2k8  # Then start Windows
+   ```
+
+**Manual Recovery:**
+If provisioning stops mid-way:
+```powershell
+cd vagrant
+# Check VM status
+vagrant status
+
+# Resume provisioning
+vagrant provision win2k8
+
+# Or destroy and retry
+vagrant destroy win2k8 -f
+vagrant up win2k8
+```
+
+---
+
 ### Issue: "VirtualBox not found"
 
 **Symptoms:**
