@@ -317,14 +317,14 @@ cd /vagrant/vagrant/provisioning/kali
 
 **Symptoms:**
 - `Q4_Financial_Report.pdf.lnk` missing
-- Provisioning completed but no LNK
+- Provisioning completed but no HTA
 
 **Solution:**
 ```bash
 # SSH into Kali
 vagrant ssh kali
 
-# Manually run LNK generation script
+# Manually run HTA generation script
 cd /vagrant/vagrant/provisioning/kali
 ./create_exe_payload.sh
 
@@ -396,7 +396,7 @@ cd /vagrant/vagrant/provisioning/kali
 
 ---
 
-### Issue: LNK downloads but doesn't execute payload
+### Issue: HTA downloads but doesn't execute payload
 
 **Symptoms:**
 - HTTP server shows GET request

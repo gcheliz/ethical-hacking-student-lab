@@ -73,7 +73,7 @@ fi
 echo "  Creating persistent configuration..."
 sudo tee /etc/network/interfaces.d/$IFACE > /dev/null << EOF
 # NAT Network - Static IP Configuration
-# LNK Exploit Lab
+# HTA Exploit Lab
 auto $IFACE
 iface $IFACE inet static
     address $EXPECTED_IP
