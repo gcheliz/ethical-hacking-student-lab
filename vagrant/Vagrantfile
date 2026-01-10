@@ -99,6 +99,8 @@ Vagrant.configure("2") do |config|
 
     # Provisioning - Start HTTP server manually for immediate use
     kali.vm.provision "shell",
+      privileged: false,
+      name: "Start HTTP server manually",
       inline: <<-SHELL
         echo "Starting HTTP server for immediate use..."
         cd /home/vagrant/hta_payloads
@@ -110,8 +112,6 @@ Vagrant.configure("2") do |config|
           echo "⚠ HTTP server will be available after VM restart"
         fi
       SHELL
-      privileged: false,
-      name: "Start HTTP server manually"
   end
 
   # =========================================================================
