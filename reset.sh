@@ -78,8 +78,8 @@ echo
 echo "Next steps:"
 echo "  1. cd vagrant"
 echo "  2. vagrant ssh kali"
-echo "  3. cd /vagrant/exploits/lnk"
-echo "  4. ./start_lnk_attack.sh"
+echo "  3. cd /vagrant/exploits/hta"
+echo "  4. ./start_hta_attack.sh"
 echo
 
 cd ..
