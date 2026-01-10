@@ -4,6 +4,9 @@
 # Ensures eth1 (Host-Only adapter) has correct static IP
 ################################################################################
 
+# Enable verbose output to see what's happening
+set -x
+
 # Expected configuration
 EXPECTED_IP="192.168.56.101"
 NETMASK="255.255.255.0"
@@ -57,29 +60,46 @@ echo ""
 # Configure static IP
 echo "[3/4] Configuring static IP on $IFACE..."
 
+# Disable NetworkManager/systemd-networkd management of this interface
+echo "  Disabling automatic network management for $IFACE..."
+if systemctl is-active NetworkManager &>/dev/null; then
+    echo "  NetworkManager detected, ignoring $IFACE..."
+    nmcli device set $IFACE managed no || true
+fi
+
 # Bring interface up first
 echo "  Bringing interface up..."
-ip link set $IFACE up 2>/dev/null
+ip link set $IFACE up
+sleep 1
 
 # Kill any DHCP clients that might interfere
 echo "  Stopping DHCP clients..."
-pkill dhclient 2>/dev/null
-sleep 1
+pkill dhclient || true
+pkill dhclient6 || true
+sleep 2
 
 # Remove any existing IP addresses
 echo "  Flushing existing IPs..."
-ip addr flush dev $IFACE 2>/dev/null
+ip addr flush dev $IFACE
+sleep 1
 
 # Add the static IP
 echo "  Adding IP $EXPECTED_IP/24..."
 ip addr add $EXPECTED_IP/24 dev $IFACE
+echo "  IP add command completed with exit code: $?"
 
-# Ensure interface is up
+# Ensure interface is up again
+echo "  Ensuring interface is up..."
 ip link set $IFACE up
+sleep 1
+
+# Show current IP state
+echo "  Current IP state on $IFACE:"
+ip addr show $IFACE
 
 # Add route to local subnet (don't change default route - that's for SSH!)
 echo "  Adding route to 192.168.56.0/24..."
-ip route add 192.168.56.0/24 dev $IFACE 2>/dev/null
+ip route add 192.168.56.0/24 dev $IFACE || echo "  (route might already exist)"
 
 # Wait for configuration to settle
 sleep 2
