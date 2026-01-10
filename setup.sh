@@ -26,7 +26,7 @@ REQUIRED_RAM_GB=8
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║                                                                ║${NC}"
 echo -e "${BLUE}║    ETHICAL HACKING LAB - AUTOMATED LOCAL SETUP                 ║${NC}"
-echo -e "${BLUE}║    LNK Shortcut Exploit - Fake PDF Attack                      ║${NC}"
+echo -e "${BLUE}║    HTA Exploit - Fake PDF Attack                               ║${NC}"
 echo -e "${BLUE}║                                                                ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo

@@ -54,7 +54,7 @@ function Write-Warning-Message {
 Clear-Host
 
 Write-Header "ETHICAL HACKING LAB - AUTOMATED LOCAL SETUP"
-Write-Header "LNK Shortcut Exploit - Fake PDF Attack"
+Write-Header "HTA Exploit - Fake PDF Attack"
 
 # STEP 1: Check Prerequisites
 Write-Step "[1/7] Checking prerequisites..."
@@ -432,7 +432,7 @@ Write-Host "  [OK] Windows Server 2008 R2 (Target)" -ForegroundColor Green
 Write-Host "    IP Address:      $WINDOWS_IP"
 Write-Host "    Username:        vagrant"
 Write-Host "    Password:        vagrant"
-Write-Host "    Exploitation:    Automated LNK payload"
+Write-Host "    Exploitation:    HTA + EXE payload"
 Write-Host "    Security:        ALL DISABLED (intentionally vulnerable)"
 Write-Host ""
 Write-Host "Network:" -ForegroundColor Cyan
@@ -442,8 +442,8 @@ Write-Host "  [OK] NAT Adapter:        Internet access for provisioning" -Foregr
 Write-Host ""
 Write-Host "Exploit Materials:" -ForegroundColor Cyan
 Write-Host "  [OK] Payload:            shell.ps1 (PowerShell Meterpreter)" -ForegroundColor Green
-Write-Host "  [OK] LNK File:           Q4_Financial_Report.pdf.lnk" -ForegroundColor Green
-Write-Host "  [OK] Attack Scripts:     Ready in /vagrant/exploits/lnk" -ForegroundColor Green
+Write-Host "  [OK] HTA File:           Q4_Financial_Report_EXE.pdf.hta" -ForegroundColor Green
+Write-Host "  [OK] Attack Scripts:     Ready in /vagrant/exploits/hta" -ForegroundColor Green
 Write-Host "  [OK] Snapshots:          Created for easy reset" -ForegroundColor Green
 Write-Host ""
 Write-Host "================================================================" -ForegroundColor Cyan
@@ -451,18 +451,18 @@ Write-Host "                        NEXT STEPS" -ForegroundColor Cyan
 Write-Host "================================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "1. Read the exploit guide:" -ForegroundColor Yellow
-Write-Host "   start LNK_EXPLOIT_GUIDE.md" -ForegroundColor Cyan
+Write-Host "   start docs/METERPRETER_USAGE_GUIDE.md" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "2. Access the VMs:" -ForegroundColor Yellow
 Write-Host "   cd vagrant" -ForegroundColor Cyan
 Write-Host "   vagrant ssh kali          # SSH into Kali Linux" -ForegroundColor Cyan
 Write-Host "   vagrant rdp win2k8        # RDP into Windows (GUI)" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "3. Run the LNK attack:" -ForegroundColor Yellow
+Write-Host "3. Run the HTA attack:" -ForegroundColor Yellow
 Write-Host "   cd vagrant" -ForegroundColor Cyan
 Write-Host "   vagrant ssh kali" -ForegroundColor Cyan
-Write-Host "   cd /vagrant/exploits/lnk" -ForegroundColor Cyan
-Write-Host "   ./start_lnk_attack.sh" -ForegroundColor Cyan
+Write-Host "   cd /vagrant/exploits/hta" -ForegroundColor Cyan
+Write-Host "   ./start_hta_attack.sh" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "4. Reset to clean state when done:" -ForegroundColor Yellow
 Write-Host "   .\reset.ps1" -ForegroundColor Cyan
@@ -471,7 +471,7 @@ Write-Host "================================================================" -F
 Write-Host "                      DOCUMENTATION" -ForegroundColor Cyan
 Write-Host "================================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  LNK Exploit Guide:   LNK_EXPLOIT_GUIDE.md"
+Write-Host "  HTA Exploit Guide:   exploits/hta/README.md"
 Write-Host "  How To Use:          HOW_TO_USE.md"
 Write-Host "  Troubleshooting:     TROUBLESHOOTING.md"
 Write-Host "  Instructor Guide:    docs\INSTRUCTOR_GUIDE.pdf"

