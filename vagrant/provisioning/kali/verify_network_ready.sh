@@ -11,7 +11,6 @@ set -e
 MAX_WAIT=30
 WAIT_COUNT=0
 REQUIRED_IP="192.168.56.101"
-GATEWAY="192.168.56.1"
 IFACE="eth1"  # Host-Only adapter (eth0 is NAT for SSH)
 
 echo "================================"
@@ -31,18 +30,13 @@ check_network() {
         return 1
     fi
 
-    # Check if we can reach the gateway
-    if ! ping -c 1 -W 1 "$GATEWAY" > /dev/null 2>&1; then
-        return 1
-    fi
-
+    # That's enough - we don't need to ping gateway for VM-to-VM communication
     return 0
 }
 
 echo "Waiting for network to be ready..."
-echo "  Interface: $IFACE (NAT Network)"
+echo "  Interface: $IFACE (Host-Only Network)"
 echo "  Required IP: $REQUIRED_IP"
-echo "  Gateway: $GATEWAY"
 echo ""
 
 # Wait loop
