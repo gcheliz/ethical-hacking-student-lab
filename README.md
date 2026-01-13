@@ -166,7 +166,7 @@ graph TD
 | File | Type | Purpose |
 |------|------|---------|
 | `update.exe` | EXE (73KB) | Meterpreter reverse TCP payload |
-| `Q4_Financial_Report_EXE.pdf.hta` | HTA | VBScript that downloads + executes EXE |
+| `Joan_Espinach_hta_social_engineering.pdf.hta` | HTA | VBScript that downloads + executes EXE |
 
 ### Network Configuration
 

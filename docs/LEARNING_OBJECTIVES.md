@@ -25,7 +25,7 @@ This lab demonstrates a real-world social engineering attack using malicious HTM
 
 **Lab Application:**
 - HTA files with PDF icons and fake extensions
-- How "Q4_Financial_Report.pdf.hta" appears as "Q4_Financial_Report.pdf"
+- How "Joan_Espinach_hta_social_engineering.pdf.hta" appears as "Joan_Espinach_hta_social_engineering.pdf"
 - Understanding visual deception techniques
 
 ---

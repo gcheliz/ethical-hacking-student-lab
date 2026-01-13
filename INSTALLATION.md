@@ -283,7 +283,7 @@ ls -la /home/vagrant/hta_payloads/
 **Expected files:**
 ```
 update.exe                      # Meterpreter EXE payload (~73KB)
-Q4_Financial_Report_EXE.pdf.hta # Malicious HTA file
+Joan_Espinach_hta_social_engineering.pdf.hta # Malicious HTA file
 Test_EXE_Download.hta           # Testing HTA file
 ```
 
